@@ -51,13 +51,16 @@ class ReservationCreator
                 ['mobile' => $data['mobile']],
                 ['full_name' => $data['full_name']],
             );
-            $expiresAt = CarbonImmutable::now(config('app.timezone'))->addMinutes($this->settings->holdMinutes());
+            $usesOnlineDeposit = $this->settings->usesOnlineDeposit();
+            $expiresAt = $usesOnlineDeposit
+                ? CarbonImmutable::now(config('app.timezone'))->addMinutes($this->settings->holdMinutes())
+                : null;
             $reservation = Reservation::query()->create([
                 'barber_id' => $barber->getKey(),
                 'customer_id' => $customer->getKey(),
                 'starts_at' => $startsAt,
                 'ends_at' => $endsAt,
-                'status' => ReservationStatus::PendingPayment,
+                'status' => $usesOnlineDeposit ? ReservationStatus::PendingPayment : ReservationStatus::Confirmed,
                 'payment_status' => PaymentStatus::Unpaid,
                 'base_price_amount' => $quote['base_price_amount'],
                 'services_amount' => $quote['services_amount'],

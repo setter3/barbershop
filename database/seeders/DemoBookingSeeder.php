@@ -19,6 +19,7 @@ class DemoBookingSeeder extends Seeder
         DB::transaction(function (): void {
             Setting::query()->updateOrCreate(['key' => 'base_price'], ['value' => '2500000', 'type' => 'integer']);
             Setting::query()->updateOrCreate(['key' => 'deposit_percentage'], ['value' => '30', 'type' => 'integer']);
+            Setting::query()->updateOrCreate(['key' => 'booking_mode'], ['value' => 'manual_confirmation', 'type' => 'string']);
 
             $services = collect([
                 ['slug' => 'beard-design', 'name' => 'طراحی و اصلاح ریش', 'description' => 'فرم‌دهی حرفه‌ای متناسب با چهره', 'price_amount' => 900000, 'duration_minutes' => 20],

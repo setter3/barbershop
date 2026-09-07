@@ -1,0 +1,40 @@
+<x-layouts.admin title="رزروها" heading="دفتر رزروها" eyebrow="جست‌وجو و پیگیری">
+    <form class="filter-bar panel" method="GET" action="{{ route('admin.reservations.index') }}">
+        <label class="field"><span>جست‌وجوی مشتری یا کد</span><input name="search" value="{{ request('search') }}" placeholder="نام، موبایل یا کد پیگیری"></label>
+        <label class="field"><span>تاریخ</span><input name="date" type="date" value="{{ request('date') }}"></label>
+        <label class="field"><span>آرایشگر</span><select name="barber_id"><option value="">همه</option>@foreach($barbers as $barber)<option value="{{ $barber->id }}" @selected((string) request('barber_id') === (string) $barber->id)>{{ $barber->name }}</option>@endforeach</select></label>
+        <label class="field"><span>وضعیت</span><select name="status"><option value="">همه</option>@foreach($statuses as $status)<option value="{{ $status->value }}" @selected(request('status') === $status->value)>{{ $status->label() }}</option>@endforeach</select></label>
+        <button class="button" type="submit">اعمال فیلتر</button>
+        @if(request()->hasAny(['search','date','barber_id','status']))<a class="quiet-link" href="{{ route('admin.reservations.index') }}">پاک‌کردن</a>@endif
+    </form>
+
+    <section class="admin-section panel">
+        @if ($reservations->isEmpty())
+            <div class="admin-empty"><strong>رزروی پیدا نشد</strong><span>فیلترها را تغییر دهید یا منتظر رزرو جدید بمانید.</span></div>
+        @else
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead><tr><th>مشتری</th><th>آرایشگر</th><th>زمان مراجعه</th><th>مبلغ</th><th>رزرو</th><th>پرداخت</th><th></th></tr></thead>
+                    <tbody>
+                    @foreach ($reservations as $reservation)
+                        <tr>
+                            <td><strong>{{ $reservation->customer->full_name }}</strong><small dir="ltr">{{ $reservation->customer->mobile }}</small></td>
+                            <td>{{ $reservation->barber->name }}</td>
+                            <td dir="ltr">{{ $reservation->starts_at->format('Y/m/d — H:i') }}</td>
+                            <td>{{ number_format($reservation->total_amount) }} <small>ریال</small></td>
+                            <td><span class="admin-status is-{{ $reservation->status->value }}">{{ $reservation->status->label() }}</span></td>
+                            <td><span class="admin-status is-{{ $reservation->payment_status->value }}">{{ $reservation->payment_status->label() }}</span></td>
+                            <td><a class="row-link" href="{{ route('admin.reservations.show', $reservation) }}">مدیریت</a></td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="simple-pagination">
+                @if ($reservations->previousPageUrl())<a href="{{ $reservations->previousPageUrl() }}">صفحه قبل</a>@else<span></span>@endif
+                <span>صفحه {{ $reservations->currentPage() }}</span>
+                @if ($reservations->nextPageUrl())<a href="{{ $reservations->nextPageUrl() }}">صفحه بعد</a>@endif
+            </div>
+        @endif
+    </section>
+</x-layouts.admin>

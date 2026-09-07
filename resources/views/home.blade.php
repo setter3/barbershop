@@ -24,7 +24,7 @@
         </main>
 
         <footer class="site-footer">
-            <span>انتخاب آرایشگر</span><i></i><span>زمان‌بندی زنده</span><i></i><span>پرداخت بیعانه</span>
+            <span>انتخاب آرایشگر</span><i></i><span>زمان‌بندی زنده</span><i></i><span>{{ $usesOnlineDeposit ? 'پرداخت بیعانه' : 'تأیید فوری رزرو' }}</span>
         </footer>
     </div>
 </x-layouts.app>

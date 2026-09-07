@@ -31,7 +31,7 @@ class AdminAuthenticationTest extends TestCase
         ])->assertRedirect('/admin');
 
         $this->assertAuthenticatedAs($admin);
-        $this->get('/admin')->assertOk()->assertSee('داشبورد مدیریت');
+        $this->get('/admin')->assertOk()->assertSee('نبض امروز آرشام');
     }
 
     public function test_regular_user_cannot_authenticate_as_admin(): void

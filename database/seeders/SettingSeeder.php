@@ -19,6 +19,9 @@ class SettingSeeder extends Seeder
             'deposit_percentage' => ['value' => config('barbershop.deposit_percentage'), 'type' => 'integer', 'is_public' => true],
             'slot_duration_minutes' => ['value' => config('barbershop.slot_duration_minutes'), 'type' => 'integer', 'is_public' => false],
             'hold_minutes' => ['value' => config('barbershop.hold_minutes'), 'type' => 'integer', 'is_public' => false],
+            'booking_mode' => ['value' => config('barbershop.booking_mode'), 'type' => 'string', 'is_public' => true],
+            'contact_phone' => ['value' => '', 'type' => 'string', 'is_public' => true],
+            'address' => ['value' => '', 'type' => 'string', 'is_public' => true],
         ];
 
         foreach ($settings as $key => $attributes) {

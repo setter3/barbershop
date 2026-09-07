@@ -167,6 +167,7 @@ class BookingHoldTest extends TestCase
         Setting::factory()->create(['key' => 'slot_duration_minutes', 'value' => '30', 'type' => 'integer']);
         Setting::factory()->create(['key' => 'hold_minutes', 'value' => '10', 'type' => 'integer']);
         Setting::factory()->create(['key' => 'currency', 'value' => 'IRR', 'type' => 'string']);
+        Setting::factory()->create(['key' => 'booking_mode', 'value' => 'online_deposit', 'type' => 'string']);
 
         $startsAt = CarbonImmutable::now('Asia/Tehran')->addDay()->setTime(9, 0);
         $barber = Barber::factory()->create(['slot_duration_minutes' => 30]);

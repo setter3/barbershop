@@ -31,6 +31,20 @@ class BusinessSettings
         return (string) $this->value('currency', (string) config('barbershop.currency'));
     }
 
+    public function bookingMode(): string
+    {
+        $mode = (string) $this->value('booking_mode', (string) config('barbershop.booking_mode'));
+
+        return in_array($mode, ['manual_confirmation', 'online_deposit'], true)
+            ? $mode
+            : 'manual_confirmation';
+    }
+
+    public function usesOnlineDeposit(): bool
+    {
+        return $this->bookingMode() === 'online_deposit';
+    }
+
     private function integer(string $key, int $fallback): int
     {
         return (int) $this->value($key, $fallback);

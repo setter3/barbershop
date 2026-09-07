@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Booking;
 
 use App\Http\Controllers\Controller;
 use App\Models\Barber;
+use App\Services\Booking\BusinessSettings;
 use Illuminate\View\View;
 
 class BookingPageController extends Controller
 {
-    public function __invoke(): View
+    public function __invoke(BusinessSettings $settings): View
     {
         $barbers = Barber::query()
             ->where('is_active', true)
@@ -33,6 +34,9 @@ class BookingPageController extends Controller
             ])
             ->values();
 
-        return view('booking.create', compact('barbers'));
+        return view('booking.create', [
+            'barbers' => $barbers,
+            'usesOnlineDeposit' => $settings->usesOnlineDeposit(),
+        ]);
     }
 }

@@ -139,7 +139,7 @@
 
                 <div class="quote-bar" x-show="quote">
                     <span>مدت تقریبی: <b x-text="`${durationMinutes} دقیقه`"></b></span>
-                    <span>مبلغ بیعانه: <b x-text="quote ? money(quote.deposit_amount) : '—'"></b></span>
+                    <span>{{ $usesOnlineDeposit ? 'مبلغ بیعانه آنلاین' : 'بیعانه قابل پیگیری' }}: <b x-text="quote ? money(quote.deposit_amount) : '—'"></b></span>
                 </div>
 
                 <div class="booking-actions">
@@ -175,7 +175,7 @@
                             <div><dt>تاریخ</dt><dd x-text="longDate(selectedDate)"></dd></div>
                             <div><dt>ساعت</dt><dd x-text="time(selectedSlot)"></dd></div>
                             <div><dt>مبلغ کل</dt><dd x-text="quote ? money(quote.total_amount) : '—'"></dd></div>
-                            <div class="summary-total"><dt>بیعانه قابل پرداخت</dt><dd x-text="quote ? money(quote.deposit_amount) : '—'"></dd></div>
+                            <div class="summary-total"><dt>{{ $usesOnlineDeposit ? 'بیعانه قابل پرداخت' : 'بیعانه هنگام هماهنگی' }}</dt><dd x-text="quote ? money(quote.deposit_amount) : '—'"></dd></div>
                         </dl>
                     </aside>
                 </div>
@@ -183,7 +183,8 @@
                 <div class="booking-actions">
                     <button class="quiet-button" type="button" @click="step = 3">مرحله قبل</button>
                     <button class="button" type="button" :disabled="submitting || !customer.full_name || !customer.mobile" @click="submitHold">
-                        <span x-text="submitting ? 'در حال ثبت…' : 'ثبت رزرو و ادامه پرداخت'"></span>
+                        <span x-show="submitting">در حال ثبت…</span>
+                        <span x-show="!submitting">{{ $usesOnlineDeposit ? 'ثبت رزرو و ادامه پرداخت' : 'ثبت قطعی رزرو' }}</span>
                     </button>
                 </div>
             </section>
