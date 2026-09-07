@@ -13,7 +13,7 @@
                 <p class="eyebrow">PREMIUM GROOMING · TEHRAN</p>
                 <h1>استایل شما،<br><span>امضای آرشام</span></h1>
                 <p class="lead">آرایشگر دلخواه، روز و ساعت مناسب را انتخاب کنید؛ بدون ساخت حساب و با رزروی ساده و مطمئن.</p>
-                <span class="button button-disabled" aria-disabled="true">رزرو آنلاین — به‌زودی</span>
+                <a class="button" href="{{ route('booking.create') }}">رزرو آنلاین</a>
             </div>
 
             <div class="hero-art" aria-hidden="true">

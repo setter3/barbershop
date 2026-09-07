@@ -23,6 +23,11 @@ class Reservation extends Model
     /** @use HasFactory<ReservationFactory> */
     use HasFactory;
 
+    public function getRouteKeyName(): string
+    {
+        return 'reference';
+    }
+
     protected static function booted(): void
     {
         static::creating(function (self $reservation): void {

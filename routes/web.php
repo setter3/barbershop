@@ -3,7 +3,9 @@
 use App\Http\Controllers\Admin\AuthenticatedSessionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Booking\AvailabilityController;
+use App\Http\Controllers\Booking\BookingPageController;
 use App\Http\Controllers\Booking\HoldController;
+use App\Http\Controllers\Booking\ShowReservationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -11,8 +13,10 @@ Route::get('/', function () {
 })->name('home');
 
 Route::prefix('booking')->name('booking.')->group(function (): void {
+    Route::get('/', BookingPageController::class)->name('create');
     Route::get('/availability', AvailabilityController::class)->name('availability');
     Route::post('/holds', HoldController::class)->name('holds.store');
+    Route::get('/{reservation}', ShowReservationController::class)->name('show');
 });
 
 Route::middleware('guest')->prefix('admin')->name('admin.')->group(function (): void {

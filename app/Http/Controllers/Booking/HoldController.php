@@ -28,6 +28,7 @@ class HoldController extends Controller
                 'deposit_percentage' => $reservation->deposit_percentage,
                 'deposit_amount' => $reservation->deposit_amount,
                 'currency' => $reservation->currency,
+                'redirect_url' => route('booking.show', $reservation),
             ],
         ], JsonResponse::HTTP_CREATED);
     }
