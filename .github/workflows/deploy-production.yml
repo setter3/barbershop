@@ -78,7 +78,10 @@ jobs:
           set ftp:ssl-protect-data true
           set ssl:verify-certificate no
           mirror --reverse --verbose app app
-          mirror --reverse --verbose bootstrap bootstrap
+          # Never deploy bootstrap/cache: CI package discovery includes dev-only
+          # providers that are intentionally absent from production.
+          put bootstrap/app.php -o bootstrap/app.php
+          put bootstrap/providers.php -o bootstrap/providers.php
           mirror --reverse --verbose config config
           mirror --reverse --verbose resources resources
           mirror --reverse --verbose routes routes
