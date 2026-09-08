@@ -60,6 +60,16 @@ jobs:
       - name: Run application tests
         run: php artisan test
 
+      - name: Restore tracked file timestamps
+        shell: bash
+        run: |
+          while IFS= read -r -d '' file; do
+            committed_at="$(git log -1 --format='@%ct' -- "$file")"
+            if [ -n "$committed_at" ]; then
+              touch -d "$committed_at" "$file"
+            fi
+          done < <(git ls-files -z)
+
       - name: Install the FTPS deployment client
         run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
 
@@ -77,6 +87,8 @@ jobs:
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
           set ssl:verify-certificate no
+          set xfer:use-temp-file yes
+          set xfer:temp-file-name *.deploying
           mirror --reverse --verbose app app
           # Never deploy bootstrap/cache: CI package discovery includes dev-only
           # providers that are intentionally absent from production.
@@ -109,6 +121,8 @@ jobs:
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
           set ssl:verify-certificate no
+          set xfer:use-temp-file yes
+          set xfer:temp-file-name *.deploying
           mirror --reverse --verbose public/build build
           put public/favicon.ico -o favicon.ico
           put public/robots.txt -o robots.txt
