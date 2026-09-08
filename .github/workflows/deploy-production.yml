@@ -1,0 +1,120 @@
+name: Deploy production
+
+on:
+  push:
+    branches:
+      - feat/foundation-booking-engine
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arsham-production
+  cancel-in-progress: false
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out the deployment commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Block changes that need a controlled server operation
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        shell: bash
+        run: |
+          changed_files="$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}")"
+          if printf '%s\n' "$changed_files" | grep -Eq '^(composer\.(json|lock)|database/migrations/)'; then
+            echo 'Composer or database migration changes require a controlled deployment.'
+            exit 1
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build production assets
+        run: npm run build
+
+      - name: Install PHP dependencies for tests
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run application tests
+        run: php artisan test
+
+      - name: Install the FTPS deployment client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Deploy Laravel application files
+        env:
+          FTP_HOST: ${{ secrets.DEPLOY_FTP_HOST }}
+          FTP_USER: ${{ secrets.DEPLOY_APP_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.DEPLOY_FTP_PASSWORD }}
+        shell: bash
+        run: |
+          lftp -u "$FTP_USER","$FTP_PASSWORD" "$FTP_HOST" <<'LFTP'
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ssl:verify-certificate no
+          mirror --reverse --verbose app app
+          mirror --reverse --verbose bootstrap bootstrap
+          mirror --reverse --verbose config config
+          mirror --reverse --verbose resources resources
+          mirror --reverse --verbose routes routes
+          put artisan -o artisan
+          put composer.json -o composer.json
+          put composer.lock -o composer.lock
+          put package.json -o package.json
+          put package-lock.json -o package-lock.json
+          put vite.config.js -o vite.config.js
+          bye
+          LFTP
+
+      - name: Deploy public assets
+        env:
+          FTP_HOST: ${{ secrets.DEPLOY_FTP_HOST }}
+          FTP_USER: ${{ secrets.DEPLOY_WEB_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.DEPLOY_FTP_PASSWORD }}
+        shell: bash
+        run: |
+          printf '%s' "$GITHUB_SHA" > public/deploy-version.txt
+          lftp -u "$FTP_USER","$FTP_PASSWORD" "$FTP_HOST" <<'LFTP'
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ssl:verify-certificate no
+          mirror --reverse --verbose public/build build
+          put public/favicon.ico -o favicon.ico
+          put public/robots.txt -o robots.txt
+          put public/deploy-version.txt -o deploy-version.txt
+          bye
+          LFTP
+
+      - name: Verify the live deployment
+        shell: bash
+        run: |
+          for attempt in {1..12}; do
+            deployed_sha="$(curl --fail --silent --show-error "https://nobatinostyle.ir/deploy-version.txt?attempt=$attempt" || true)"
+            if [ "$deployed_sha" = "$GITHUB_SHA" ]; then
+              break
+            fi
+            sleep 5
+          done
+          test "$deployed_sha" = "$GITHUB_SHA"
+          curl --fail --silent --show-error --output /dev/null https://nobatinostyle.ir/
+          curl --fail --silent --show-error --output /dev/null https://nobatinostyle.ir/booking
