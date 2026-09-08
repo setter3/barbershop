@@ -1,0 +1,11 @@
+---
+deployment:
+  tasks:
+    - export APPPATH=/home/h422270/arsham/
+    - export WEBPATH=/home/h422270/public_html/
+    - /usr/bin/test -x /usr/bin/rsync
+    - /usr/bin/rsync -a --delete-delay --exclude='.env' --exclude='storage/' --exclude='vendor/' --exclude='public/' --exclude='.git/' --exclude='.cpanel.yml' --exclude='*.bak-*' --exclude='composer.phar' ./ $APPPATH
+    - /usr/bin/rsync -a --delete-delay public/build/ $WEBPATH/build/
+    - /bin/cp -f public/favicon.ico $WEBPATH/favicon.ico
+    - /bin/cp -f public/robots.txt $WEBPATH/robots.txt
+    - /usr/bin/git rev-parse HEAD > $WEBPATH/deploy-version.txt
