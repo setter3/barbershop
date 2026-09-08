@@ -3,9 +3,15 @@ deployment:
   tasks:
     - export APPPATH=/home/h422270/arsham/
     - export WEBPATH=/home/h422270/public_html/
-    - /usr/bin/test -x /usr/bin/rsync
-    - /usr/bin/rsync -a --delete-delay --exclude='.env' --exclude='storage/' --exclude='vendor/' --exclude='public/' --exclude='.git/' --exclude='.cpanel.yml' --exclude='*.bak-*' --exclude='composer.phar' ./ $APPPATH
-    - /usr/bin/rsync -a --delete-delay public/build/ $WEBPATH/build/
+    - /bin/mkdir -p $APPPATH/app $APPPATH/bootstrap $APPPATH/config $APPPATH/database $APPPATH/resources $APPPATH/routes $WEBPATH/build
+    - /bin/cp -Rf app/. $APPPATH/app/
+    - /bin/cp -Rf bootstrap/. $APPPATH/bootstrap/
+    - /bin/cp -Rf config/. $APPPATH/config/
+    - /bin/cp -Rf database/. $APPPATH/database/
+    - /bin/cp -Rf resources/. $APPPATH/resources/
+    - /bin/cp -Rf routes/. $APPPATH/routes/
+    - /bin/cp -f artisan composer.json composer.lock package.json package-lock.json vite.config.js $APPPATH
+    - /bin/cp -Rf public/build/. $WEBPATH/build/
     - /bin/cp -f public/favicon.ico $WEBPATH/favicon.ico
     - /bin/cp -f public/robots.txt $WEBPATH/robots.txt
     - /usr/bin/git rev-parse HEAD > $WEBPATH/deploy-version.txt
