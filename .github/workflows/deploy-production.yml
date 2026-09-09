@@ -106,6 +106,63 @@ jobs:
           bye
           LFTP
 
+      - name: Sync the Zibal production secret
+        env:
+          FTP_HOST: ${{ secrets.DEPLOY_FTP_HOST }}
+          FTP_USER: ${{ secrets.DEPLOY_APP_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.DEPLOY_FTP_PASSWORD }}
+          ZIBAL_MERCHANT: ${{ secrets.ZIBAL_MERCHANT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          lftp -u "$FTP_USER","$FTP_PASSWORD" "$FTP_HOST" <<'LFTP'
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ssl:verify-certificate no
+          get .env -o /tmp/arsham-production-env
+          bye
+          LFTP
+
+          python3 <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          path = Path('/tmp/arsham-production-env')
+          contents = path.read_text()
+          values = {
+              'ZIBAL_MERCHANT': os.environ['ZIBAL_MERCHANT'],
+              'ZIBAL_PAYMENT_HOLD_MINUTES': '20',
+          }
+
+          for key, value in values.items():
+              replacement = f'{key}={value}'
+              pattern = rf'(?m)^{re.escape(key)}=.*$'
+              if re.search(pattern, contents):
+                  contents = re.sub(pattern, replacement, contents)
+              else:
+                  contents = contents.rstrip() + f'\n{replacement}\n'
+
+          path.write_text(contents)
+          PY
+
+          lftp -u "$FTP_USER","$FTP_PASSWORD" "$FTP_HOST" <<'LFTP'
+          set cmd:fail-exit yes
+          set net:max-retries 2
+          set net:timeout 20
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ssl:verify-certificate no
+          put /tmp/arsham-production-env -o .env.deploying
+          mv .env.deploying .env
+          bye
+          LFTP
+          rm -f /tmp/arsham-production-env
+
       - name: Deploy public assets
         env:
           FTP_HOST: ${{ secrets.DEPLOY_FTP_HOST }}
