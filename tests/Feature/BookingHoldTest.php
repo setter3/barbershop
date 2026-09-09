@@ -45,7 +45,8 @@ class BookingHoldTest extends TestCase
             ->assertJsonPath('data.total_amount', 150_000)
             ->assertJsonPath('data.deposit_percentage', 25)
             ->assertJsonPath('data.deposit_amount', 37_500)
-            ->assertJsonPath('data.redirect_url', fn (string $url): bool => str_contains($url, '/booking/'));
+            ->assertJsonPath('data.redirect_url', fn (string $url): bool => str_contains($url, '/booking/'))
+            ->assertJsonPath('data.payment_url', fn (string $url): bool => str_contains($url, '/payment/zibal'));
 
         $this->assertGuest();
         $this->assertDatabaseHas('customers', ['mobile' => '+989121234567']);

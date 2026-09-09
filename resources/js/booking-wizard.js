@@ -159,6 +159,22 @@ export default function bookingWizard(config) {
                     throw new Error(this.responseMessage(body));
                 }
 
+                if (body.data.payment_url) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = body.data.payment_url;
+
+                    const csrf = document.createElement('input');
+                    csrf.type = 'hidden';
+                    csrf.name = '_token';
+                    csrf.value = this.csrf;
+                    form.appendChild(csrf);
+                    document.body.appendChild(form);
+                    form.submit();
+
+                    return;
+                }
+
                 window.location.assign(body.data.redirect_url);
             } catch (error) {
                 this.error = error.message || 'ثبت رزرو ممکن نشد. دوباره تلاش کنید.';

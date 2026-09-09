@@ -26,10 +26,22 @@
             <h1 dir="ltr">{{ $reservation->reference }}</h1>
             <span class="status-pill {{ $isExpired ? 'is-expired' : '' }}">{{ $statusLabel }}</span>
 
+            @if (session('payment_error'))
+                <p class="form-error" role="alert">{{ session('payment_error') }}</p>
+            @elseif (request('payment') === 'success')
+                <p class="confirmation-message">پرداخت بیعانه با موفقیت تأیید شد و نوبت شما قطعی است.</p>
+            @elseif (request('payment') === 'failed')
+                <p class="form-error" role="alert">پرداخت انجام نشد یا توسط درگاه تأیید نشد. اگر مبلغی از حساب شما کسر شده است با پشتیبانی تماس بگیرید.</p>
+            @elseif (request('payment') === 'verification-error')
+                <p class="form-error" role="alert">ارتباط با زیبال برای تأیید نهایی برقرار نشد. وضعیت پرداخت شما محفوظ است؛ چند دقیقه دیگر دوباره این صفحه را بررسی کنید.</p>
+            @elseif (request('payment') === 'review')
+                <p class="form-error" role="alert">پرداخت ثبت شده اما زمان رزرو دیگر قابل تثبیت نبود. برای تعیین زمان جایگزین یا بازگشت وجه با مجموعه تماس بگیرید.</p>
+            @endif
+
             @if ($isExpired)
                 <p class="confirmation-message">مهلت این رزرو موقت تمام شده و زمان انتخابی آزاد شده است. لطفاً رزرو تازه‌ای ثبت کنید.</p>
             @elseif ($reservation->status === \App\Enums\ReservationStatus::PendingPayment)
-                <p class="confirmation-message">زمان انتخابی تا ساعت {{ $reservation->expires_at?->format('H:i') }} برای شما نگه داشته شده است. اتصال پرداخت آنلاین در فاز بعد فعال می‌شود.</p>
+                <p class="confirmation-message">زمان انتخابی تا ساعت {{ $reservation->expires_at?->format('H:i') }} برای شما نگه داشته شده است. با پرداخت ۳۰٪ بیعانه، نوبت قطعی می‌شود.</p>
             @else
                 <p class="confirmation-message">رزرو شما ثبت شده است. کد پیگیری را تا زمان مراجعه نگه دارید.</p>
             @endif
@@ -52,7 +64,10 @@
             @if ($isExpired)
                 <a class="button" href="{{ route('booking.create') }}">انتخاب زمان جدید</a>
             @elseif ($reservation->status === \App\Enums\ReservationStatus::PendingPayment)
-                <button class="button" type="button" disabled>درگاه پرداخت — فاز بعد</button>
+                <form method="POST" action="{{ route('booking.payments.zibal.start', $reservation) }}">
+                    @csrf
+                    <button class="button" type="submit">پرداخت {{ number_format($reservation->deposit_amount) }} ریال با زیبال</button>
+                </form>
             @endif
         </main>
     </div>

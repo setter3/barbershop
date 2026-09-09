@@ -11,6 +11,8 @@ use App\Http\Controllers\Booking\AvailabilityController;
 use App\Http\Controllers\Booking\BookingPageController;
 use App\Http\Controllers\Booking\HoldController;
 use App\Http\Controllers\Booking\ShowReservationController;
+use App\Http\Controllers\Booking\StartZibalPaymentController;
+use App\Http\Controllers\Booking\ZibalCallbackController;
 use App\Services\Booking\BusinessSettings;
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +24,12 @@ Route::prefix('booking')->name('booking.')->group(function (): void {
     Route::get('/', BookingPageController::class)->name('create');
     Route::get('/availability', AvailabilityController::class)->name('availability');
     Route::post('/holds', HoldController::class)->name('holds.store');
+    Route::get('/payments/zibal/callback', ZibalCallbackController::class)
+        ->middleware('throttle:60,1')
+        ->name('payments.zibal.callback');
+    Route::post('/{reservation}/payment/zibal', StartZibalPaymentController::class)
+        ->middleware('throttle:10,1')
+        ->name('payments.zibal.start');
     Route::get('/{reservation}', ShowReservationController::class)->name('show');
 });
 

@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'zibal' => [
+        'merchant' => env('ZIBAL_MERCHANT'),
+        'request_url' => env('ZIBAL_REQUEST_URL', 'https://gateway.zibal.ir/v1/request'),
+        'verify_url' => env('ZIBAL_VERIFY_URL', 'https://gateway.zibal.ir/v1/verify'),
+        'inquiry_url' => env('ZIBAL_INQUIRY_URL', 'https://gateway.zibal.ir/v1/inquiry'),
+        'start_url' => env('ZIBAL_START_URL', 'https://gateway.zibal.ir/start'),
+        'payment_hold_minutes' => (int) env('ZIBAL_PAYMENT_HOLD_MINUTES', 20),
+    ],
+
 ];

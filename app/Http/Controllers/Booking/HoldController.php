@@ -29,6 +29,9 @@ class HoldController extends Controller
                 'deposit_amount' => $reservation->deposit_amount,
                 'currency' => $reservation->currency,
                 'redirect_url' => route('booking.show', $reservation),
+                'payment_url' => $reservation->status === \App\Enums\ReservationStatus::PendingPayment
+                    ? route('booking.payments.zibal.start', $reservation)
+                    : null,
             ],
         ], JsonResponse::HTTP_CREATED);
     }
