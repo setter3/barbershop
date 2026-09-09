@@ -8,7 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Services\Payments\ZibalGateway;
-use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -38,7 +37,10 @@ class ZibalCallbackController extends Controller
         }
 
         if ($payment->status === PaymentStatus::Paid) {
-            return $this->toReservation($reservation, 'success');
+            return $this->toReservation(
+                $reservation,
+                $reservation->status === ReservationStatus::Confirmed ? 'success' : 'review',
+            );
         }
 
         if ((string) $validated['success'] !== '1') {
@@ -60,20 +62,34 @@ class ZibalCallbackController extends Controller
             return $this->toReservation($reservation, 'verification-error');
         }
 
-        if ((int) ($verification['result'] ?? 0) !== 100
-            || (int) ($verification['status'] ?? 0) !== 1
-            || (int) ($verification['amount'] ?? 0) !== $payment->amount
-            || (isset($verification['orderId']) && (string) $verification['orderId'] !== $reservation->reference)) {
+        $isPaid = (int) ($verification['result'] ?? 0) === 100
+            && (int) ($verification['status'] ?? 0) === 1;
+        $amountMatches = (int) ($verification['amount'] ?? 0) === $payment->amount;
+        $orderMatches = ! isset($verification['orderId'])
+            || (string) $verification['orderId'] === $reservation->reference;
+
+        if (! $isPaid) {
             Log::warning('Zibal verification did not match the local payment.', [
                 'payment_id' => $payment->getKey(),
                 'result' => $verification['result'] ?? null,
                 'status' => $verification['status'] ?? null,
-                'amount_matches' => (int) ($verification['amount'] ?? 0) === $payment->amount,
-                'order_matches' => ! isset($verification['orderId']) || (string) $verification['orderId'] === $reservation->reference,
+                'amount_matches' => $amountMatches,
+                'order_matches' => $orderMatches,
             ]);
             $this->markFailed($payment, $validated, $verification);
 
             return $this->toReservation($reservation, 'failed');
+        }
+
+        if (! $amountMatches || ! $orderMatches) {
+            Log::critical('Zibal reported a paid transaction that requires manual review.', [
+                'payment_id' => $payment->getKey(),
+                'amount_matches' => $amountMatches,
+                'order_matches' => $orderMatches,
+            ]);
+            $this->markPaidForReview($payment, $validated, $verification);
+
+            return $this->toReservation($reservation, 'review');
         }
 
         $needsReview = DB::transaction(function () use ($payment, $validated, $verification): bool {
@@ -91,9 +107,7 @@ class ZibalCallbackController extends Controller
             $payment->update([
                 'status' => PaymentStatus::Paid,
                 'transaction_id' => isset($verification['refNumber']) ? (string) $verification['refNumber'] : null,
-                'paid_at' => isset($verification['paidAt'])
-                    ? CarbonImmutable::parse((string) $verification['paidAt'])
-                    : now(),
+                'paid_at' => now(),
                 'payload' => [
                     ...($payment->payload ?? []),
                     'callback' => $validated,
@@ -122,6 +136,36 @@ class ZibalCallbackController extends Controller
         }, 3);
 
         return $this->toReservation($reservation, $needsReview ? 'review' : 'success');
+    }
+
+    /**
+     * @param  array<string, mixed>  $callback
+     * @param  array<string, mixed>  $verification
+     */
+    private function markPaidForReview(Payment $payment, array $callback, array $verification): void
+    {
+        DB::transaction(function () use ($payment, $callback, $verification): void {
+            $payment = Payment::query()->lockForUpdate()->findOrFail($payment->getKey());
+            $reservation = Reservation::query()->lockForUpdate()->findOrFail($payment->reservation_id);
+
+            $payment->update([
+                'status' => PaymentStatus::Paid,
+                'transaction_id' => isset($verification['refNumber']) ? (string) $verification['refNumber'] : null,
+                'paid_at' => now(),
+                'payload' => [
+                    ...($payment->payload ?? []),
+                    'callback' => $callback,
+                    'verification' => $verification,
+                    'requires_review' => true,
+                ],
+            ]);
+            $reservation->update([
+                'status' => ReservationStatus::Cancelled,
+                'payment_status' => PaymentStatus::Paid,
+                'expires_at' => null,
+            ]);
+            $reservation->slotClaims()->delete();
+        }, 3);
     }
 
     /** @param array<string, mixed> $callback */

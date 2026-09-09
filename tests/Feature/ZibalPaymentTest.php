@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
+use App\Models\Customer;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\SlotClaim;
@@ -107,7 +108,7 @@ class ZibalPaymentTest extends TestCase
         $this->assertNull($claim->fresh()->expires_at);
     }
 
-    public function test_amount_mismatch_never_confirms_reservation(): void
+    public function test_paid_amount_mismatch_is_held_for_review_without_allowing_another_charge(): void
     {
         $reservation = $this->pendingReservation();
         SlotClaim::factory()->for($reservation)->for($reservation->barber)->create();
@@ -133,12 +134,13 @@ class ZibalPaymentTest extends TestCase
             'orderId' => $reservation->reference,
         ]))->assertRedirect(route('booking.show', [
             'reservation' => $reservation,
-            'payment' => 'failed',
+            'payment' => 'review',
         ]));
 
-        $this->assertSame(ReservationStatus::PendingPayment, $reservation->fresh()->status);
-        $this->assertSame(PaymentStatus::Failed, $reservation->fresh()->payment_status);
-        $this->assertSame(PaymentStatus::Failed, $payment->fresh()->status);
+        $this->assertSame(ReservationStatus::Cancelled, $reservation->fresh()->status);
+        $this->assertSame(PaymentStatus::Paid, $reservation->fresh()->payment_status);
+        $this->assertSame(PaymentStatus::Paid, $payment->fresh()->status);
+        $this->assertDatabaseMissing('slot_claims', ['reservation_id' => $reservation->getKey()]);
     }
 
     public function test_cancelled_gateway_callback_is_failed_without_calling_verify(): void
@@ -169,14 +171,16 @@ class ZibalPaymentTest extends TestCase
 
     private function pendingReservation(): Reservation
     {
-        return Reservation::factory()->create([
-            'status' => ReservationStatus::PendingPayment,
-            'payment_status' => PaymentStatus::Unpaid,
-            'total_amount' => 1_000_000,
-            'deposit_percentage' => 30,
-            'deposit_amount' => 300_000,
-            'currency' => 'IRR',
-            'expires_at' => now()->addMinutes(10),
-        ]);
+        return Reservation::factory()
+            ->for(Customer::factory()->state(['mobile' => '+989121234567']))
+            ->create([
+                'status' => ReservationStatus::PendingPayment,
+                'payment_status' => PaymentStatus::Unpaid,
+                'total_amount' => 1_000_000,
+                'deposit_percentage' => 30,
+                'deposit_amount' => 300_000,
+                'currency' => 'IRR',
+                'expires_at' => now()->addMinutes(10),
+            ]);
     }
 }
