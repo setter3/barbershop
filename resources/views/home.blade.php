@@ -91,6 +91,9 @@
             <div class="footer-features">
                 <span>انتخاب آرایشگر</span><i></i><span>زمان‌بندی زنده</span><i></i><span>{{ $usesOnlineDeposit ? 'پرداخت بیعانه' : 'تأیید فوری رزرو' }}</span>
             </div>
+            <div class="enamad-seal">
+                <a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=7783788&Code=f1gVk32A8hyaXFJDNwj3aArlBYRhwaAS'><img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=7783788&Code=f1gVk32A8hyaXFJDNwj3aArlBYRhwaAS' alt='' style='cursor:pointer' code='f1gVk32A8hyaXFJDNwj3aArlBYRhwaAS'></a>
+            </div>
             <small>ظاهر بهتر، روزهای بهتر.</small>
         </footer>
     </div>

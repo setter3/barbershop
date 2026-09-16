@@ -434,6 +434,8 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .footer-features { display: flex; align-items: center; justify-content: center; gap: 0.85rem; font-size: 0.74rem; }
 .footer-features i { width: 3px; height: 3px; border-radius: 50%; background: #a97938; }
 .home-page .site-footer > small { font-size: 0.72rem; }
+.enamad-seal { display: grid; min-width: 5rem; min-height: 5rem; place-items: center; }
+.enamad-seal img { display: block; max-width: 5rem; height: auto; }
 
 /* Booking page: brighter surfaces and stronger interaction hierarchy */
 .booking-page .booking-shell { width: min(1120px, calc(100% - 2rem)); }
