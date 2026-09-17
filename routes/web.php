@@ -14,20 +14,7 @@ use App\Http\Controllers\Booking\ShowReservationController;
 use App\Http\Controllers\Booking\StartZibalPaymentController;
 use App\Http\Controllers\Booking\ZibalCallbackController;
 use App\Services\Booking\BusinessSettings;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
-
-Route::get('/ops/payment-egress-6f1d9a2c', function () {
-    $response = Http::acceptJson()
-        ->connectTimeout(3)
-        ->timeout(8)
-        ->get('https://api.ipify.org', ['format' => 'json']);
-
-    abort_unless($response->successful() && filter_var($response->json('ip'), FILTER_VALIDATE_IP), 503);
-
-    return response()->json(['ip' => $response->json('ip')])
-        ->header('Cache-Control', 'no-store');
-});
 
 Route::get('/', function () {
     return view('home', ['usesOnlineDeposit' => app(BusinessSettings::class)->usesOnlineDeposit()]);
