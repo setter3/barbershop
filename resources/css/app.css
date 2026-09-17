@@ -439,6 +439,7 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 
 /* Booking page: brighter surfaces and stronger interaction hierarchy */
 .booking-page .booking-shell { width: min(1120px, calc(100% - 2rem)); }
+.booking-payment-error { margin: 0 0 1rem; padding: 0.85rem 1rem; border: 1px solid rgba(180, 66, 66, 0.3); border-radius: 0.85rem; background: rgba(180, 66, 66, 0.08); }
 .booking-page .quiet-link,
 .booking-page .quiet-button { color: var(--public-muted); }
 .booking-page .quiet-link:hover,

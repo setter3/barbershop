@@ -159,6 +159,9 @@ jobs:
           set ssl:verify-certificate no
           put /tmp/arsham-production-env -o .env.deploying
           mv .env.deploying .env
+          # Laravel ignores updated .env values while a cached config file exists.
+          # Remove only that generated cache so the new merchant is loaded.
+          rm -f bootstrap/cache/config.php
           bye
           LFTP
           rm -f /tmp/arsham-production-env

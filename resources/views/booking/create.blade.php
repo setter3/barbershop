@@ -28,6 +28,10 @@
             <p>در چهار قدم کوتاه زمان مناسب خودتان را انتخاب کنید.</p>
         </div>
 
+        @if (session('payment_error'))
+            <p class="form-error booking-payment-error" role="alert">{{ session('payment_error') }}</p>
+        @endif
+
         <ol class="booking-progress" aria-label="مراحل رزرو">
             <template x-for="item in progress" :key="item.step">
                 <li :class="{ 'is-active': step === item.step, 'is-complete': step > item.step }">

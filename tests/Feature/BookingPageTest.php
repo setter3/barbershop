@@ -67,6 +67,15 @@ class BookingPageTest extends TestCase
             ->assertSee('رزرو آنلاین');
     }
 
+    public function test_booking_page_displays_a_gateway_startup_error(): void
+    {
+        $this->withSession([
+            'payment_error' => 'اتصال به درگاه پرداخت ممکن نشد. لطفاً دوباره تلاش کنید.',
+        ])->get(route('booking.create'))
+            ->assertOk()
+            ->assertSee('اتصال به درگاه پرداخت ممکن نشد. لطفاً دوباره تلاش کنید.');
+    }
+
     public function test_demo_booking_seeder_is_repeatable(): void
     {
         $this->seed(DemoBookingSeeder::class);
