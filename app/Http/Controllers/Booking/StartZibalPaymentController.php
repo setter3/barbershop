@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Reservation;
 use App\Services\Payments\ZibalGateway;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -84,9 +85,48 @@ class StartZibalPaymentController extends Controller
         } catch (Throwable $exception) {
             report($exception);
 
-            return back()->with('payment_error', 'اتصال به درگاه پرداخت ممکن نشد. لطفاً دوباره تلاش کنید.');
+            return back()->with(
+                'payment_error',
+                'اتصال به درگاه پرداخت ممکن نشد. لطفاً دوباره تلاش کنید. کد پیگیری: '
+                    .$this->errorCode($exception),
+            );
         }
 
         return redirect()->away($paymentUrl);
+    }
+
+    private function errorCode(Throwable $exception): string
+    {
+        if ($exception instanceof ConnectionException) {
+            return 'ZP-CONNECTION';
+        }
+
+        $message = $exception->getMessage();
+
+        if (str_contains($message, 'merchant is not configured')) {
+            return 'ZP-CONFIG';
+        }
+
+        if (preg_match('/Result: ([\-\d]+)/', $message, $matches) === 1) {
+            return 'ZP-RESULT-'.$matches[1];
+        }
+
+        if (preg_match('/HTTP (\d+)/', $message, $matches) === 1) {
+            return 'ZP-HTTP-'.$matches[1];
+        }
+
+        if (str_contains($message, 'no longer payable')) {
+            return 'ZP-EXPIRED';
+        }
+
+        if (str_contains($message, 'below the gateway minimum')) {
+            return 'ZP-AMOUNT';
+        }
+
+        if (str_contains($message, 'must use IRR')) {
+            return 'ZP-CURRENCY';
+        }
+
+        return 'ZP-UNEXPECTED';
     }
 }

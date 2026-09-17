@@ -64,6 +64,22 @@ class ZibalPaymentTest extends TestCase
         });
     }
 
+    public function test_gateway_rejection_returns_a_safe_diagnostic_code(): void
+    {
+        $reservation = $this->pendingReservation();
+        Http::fake([
+            'https://gateway.zibal.test/v1/request' => Http::response([
+                'result' => 103,
+                'message' => 'authentication error',
+            ]),
+        ]);
+
+        $this->from(route('booking.create'))
+            ->post(route('booking.payments.zibal.start', $reservation))
+            ->assertRedirect(route('booking.create'))
+            ->assertSessionHas('payment_error', fn (string $message): bool => str_contains($message, 'ZP-RESULT-103'));
+    }
+
     public function test_verified_payment_confirms_reservation_and_permanently_claims_slot(): void
     {
         $reservation = $this->pendingReservation();
