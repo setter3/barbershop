@@ -13,7 +13,7 @@ class BusinessSettings
 
     public function depositPercentage(): int
     {
-        return min(100, max(0, $this->integer('deposit_percentage', (int) config('barbershop.deposit_percentage'))));
+        return 100;
     }
 
     public function slotDurationMinutes(): int

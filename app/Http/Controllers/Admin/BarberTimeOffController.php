@@ -12,7 +12,7 @@ class BarberTimeOffController extends Controller
 {
     public function store(TimeOffRequest $request, Barber $barber): RedirectResponse
     {
-        $barber->timeOffs()->create($request->validated());
+        $barber->timeOffs()->create($request->safe()->only(['starts_at', 'ends_at', 'reason']));
 
         return back()->with('success', 'بازه عدم حضور ثبت شد.');
     }

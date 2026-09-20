@@ -8,11 +8,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ReservationUpdateRequest;
 use App\Models\Barber;
 use App\Models\Reservation;
+use App\Support\JalaliDate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 use Illuminate\View\View;
 
 class ReservationController extends Controller
@@ -22,15 +24,23 @@ class ReservationController extends Controller
         $request->validate([
             'status' => ['nullable', Rule::enum(ReservationStatus::class)],
             'barber_id' => ['nullable', 'integer', 'exists:barbers,id'],
-            'date' => ['nullable', 'date'],
+            'date' => ['nullable', 'string', 'max:10'],
             'search' => ['nullable', 'string', 'max:120'],
         ]);
+
+        try {
+            $filterDate = $request->filled('date')
+                ? JalaliDate::parse((string) $request->input('date'))->toDateString()
+                : null;
+        } catch (InvalidArgumentException $exception) {
+            throw ValidationException::withMessages(['date' => $exception->getMessage()]);
+        }
 
         $reservations = Reservation::query()
             ->with(['barber', 'customer'])
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->filled('barber_id'), fn ($query) => $query->where('barber_id', $request->integer('barber_id')))
-            ->when($request->filled('date'), fn ($query) => $query->whereDate('starts_at', $request->date('date')))
+            ->when($filterDate, fn ($query) => $query->whereDate('starts_at', $filterDate))
             ->when($request->filled('search'), function ($query) use ($request): void {
                 $term = '%'.$request->string('search').'%';
                 $query->where(function ($query) use ($term): void {
@@ -83,7 +93,7 @@ class ReservationController extends Controller
 
             if ($paymentStatus === PaymentStatus::Paid) {
                 $reservation->payments()->updateOrCreate(['provider' => 'manual'], [
-                    'amount' => $reservation->deposit_amount,
+                    'amount' => $reservation->total_amount,
                     'currency' => $reservation->currency,
                     'status' => PaymentStatus::Paid,
                     'transaction_id' => $request->validated('payment_reference'),

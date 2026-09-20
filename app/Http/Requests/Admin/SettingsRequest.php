@@ -17,7 +17,6 @@ class SettingsRequest extends FormRequest
         return [
             'site_name' => ['required', 'string', 'max:120'],
             'base_price' => ['required', 'integer', 'min:0', 'max:999999999999'],
-            'deposit_percentage' => ['required', 'integer', 'min:0', 'max:100'],
             'slot_duration_minutes' => ['required', 'integer', 'min:5', 'max:240'],
             'hold_minutes' => ['required', 'integer', 'min:3', 'max:120'],
             'booking_mode' => ['required', Rule::in(['manual_confirmation', 'online_deposit'])],

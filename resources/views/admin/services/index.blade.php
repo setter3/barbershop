@@ -15,7 +15,10 @@
                                 <td>{{ $service->duration_minutes }} دقیقه</td>
                                 <td>{{ $service->barbers_count }}</td>
                                 <td><span class="admin-status {{ $service->is_active ? 'is-confirmed' : 'is-cancelled' }}">{{ $service->is_active ? 'فعال' : 'غیرفعال' }}</span></td>
-                                <td><a class="row-link" href="{{ route('admin.services.edit', $service) }}">ویرایش</a></td>
+                                <td class="row-actions">
+                                    <a class="row-link" href="{{ route('admin.services.edit', $service) }}">ویرایش</a>
+                                    <form method="POST" action="{{ route('admin.services.destroy', $service) }}" onsubmit="return confirm('این خدمت حذف شود؟');">@csrf @method('DELETE')<button class="danger-link" type="submit">حذف</button></form>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

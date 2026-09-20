@@ -93,6 +93,7 @@ class AdminManagementTest extends TestCase
 
         $this->assertDatabaseHas('services', ['slug' => 'face-cleanup-admin', 'price_amount' => 1_500_000]);
         $this->assertDatabaseHas('settings', ['key' => 'booking_mode', 'value' => 'manual_confirmation']);
+        $this->assertDatabaseHas('settings', ['key' => 'deposit_percentage', 'value' => '100']);
     }
 
     public function test_manual_booking_mode_creates_a_confirmed_non_expiring_reservation(): void
@@ -104,11 +105,14 @@ class AdminManagementTest extends TestCase
         Setting::factory()->create(['key' => 'booking_mode', 'value' => 'manual_confirmation', 'type' => 'string']);
         $startsAt = CarbonImmutable::now('Asia/Tehran')->addDay()->setTime(10, 0);
         $barber = Barber::factory()->create(['slot_duration_minutes' => 30]);
+        $service = Service::factory()->create(['price_amount' => 100000, 'duration_minutes' => 0]);
+        $barber->services()->attach($service);
         BarberSchedule::factory()->for($barber)->create(['weekday' => $startsAt->dayOfWeek, 'starts_at' => '10:00:00', 'ends_at' => '13:00:00']);
 
         $this->postJson(route('booking.holds.store'), [
             'barber_id' => $barber->getKey(),
             'starts_at' => $startsAt->format('Y-m-d H:i:s'),
+            'service_ids' => [$service->getKey()],
             'full_name' => 'مشتری نسخه اولیه',
             'mobile' => '09121234567',
         ])->assertCreated()->assertJsonPath('data.status', ReservationStatus::Confirmed->value)->assertJsonPath('data.expires_at', null);
@@ -141,14 +145,67 @@ class AdminManagementTest extends TestCase
         $barber = Barber::factory()->create();
 
         $this->actingAs($admin)->post(route('admin.barbers.time-offs.store', $barber), [
-            'starts_at' => '2030-01-02 10:00:00',
-            'ends_at' => '2030-01-02 18:00:00',
+            'starts_on' => '۱۴۰۸/۱۰/۱۲',
+            'starts_time' => '10:00',
+            'ends_on' => '۱۴۰۸/۱۰/۱۲',
+            'ends_time' => '18:00',
             'reason' => 'مرخصی',
         ])->assertRedirect();
 
         $timeOff = $barber->timeOffs()->firstOrFail();
         $this->actingAs($admin)->delete(route('admin.barbers.time-offs.destroy', [$barber, $timeOff]))->assertRedirect();
         $this->assertDatabaseMissing('barber_time_offs', ['id' => $timeOff->getKey()]);
+    }
+
+    public function test_admin_can_delete_unused_barbers_and_services_but_not_historical_records(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $unusedBarber = Barber::factory()->create();
+        $unusedService = Service::factory()->create();
+
+        $this->actingAs($admin)->delete(route('admin.barbers.destroy', $unusedBarber))->assertRedirect(route('admin.barbers.index'));
+        $this->actingAs($admin)->delete(route('admin.services.destroy', $unusedService))->assertRedirect(route('admin.services.index'));
+        $this->assertDatabaseMissing('barbers', ['id' => $unusedBarber->getKey()]);
+        $this->assertDatabaseMissing('services', ['id' => $unusedService->getKey()]);
+
+        $reservation = Reservation::factory()->create();
+        $historicalService = Service::factory()->create();
+        $reservation->services()->attach($historicalService, [
+            'name_snapshot' => $historicalService->name,
+            'price_amount' => $historicalService->price_amount,
+            'duration_minutes' => $historicalService->duration_minutes,
+        ]);
+
+        $this->actingAs($admin)->delete(route('admin.barbers.destroy', $reservation->barber))->assertSessionHasErrors('delete');
+        $this->actingAs($admin)->delete(route('admin.services.destroy', $historicalService))->assertSessionHasErrors('delete');
+        $this->assertDatabaseHas('barbers', ['id' => $reservation->barber_id]);
+        $this->assertDatabaseHas('services', ['id' => $historicalService->getKey()]);
+    }
+
+    public function test_admin_can_define_a_daily_break_inside_working_hours(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $payload = $this->schedules([6]);
+        $payload[6] = [
+            'is_active' => 1,
+            'starts_at' => '10:00',
+            'ends_at' => '18:00',
+            'break_starts_at' => '16:00',
+            'break_ends_at' => '17:00',
+        ];
+
+        $this->actingAs($admin)->post(route('admin.barbers.store'), [
+            'name' => 'امین هیرتال',
+            'slug' => 'amin-hairtal',
+            'slot_duration_minutes' => 60,
+            'is_active' => 1,
+            'sort_order' => 1,
+            'schedules' => $payload,
+        ])->assertRedirect();
+
+        $barber = Barber::query()->where('slug', 'amin-hairtal')->firstOrFail();
+        $this->assertDatabaseHas('barber_schedules', ['barber_id' => $barber->getKey(), 'starts_at' => '10:00', 'ends_at' => '16:00']);
+        $this->assertDatabaseHas('barber_schedules', ['barber_id' => $barber->getKey(), 'starts_at' => '17:00', 'ends_at' => '18:00']);
     }
 
     private function schedules(array $activeDays): array

@@ -27,7 +27,7 @@ class CreateReservationRequest extends FormRequest
         return [
             'barber_id' => ['required', 'integer', Rule::exists('barbers', 'id')->where('is_active', true)],
             'starts_at' => ['required', 'date', 'after:now'],
-            'service_ids' => ['sometimes', 'array', 'max:20'],
+            'service_ids' => ['required', 'array', 'min:1', 'max:20'],
             'service_ids.*' => ['integer', 'distinct', Rule::exists('services', 'id')->where('is_active', true)],
             'full_name' => ['required', 'string', 'max:120'],
             'mobile' => ['required', 'regex:/^\+989\d{9}$/'],

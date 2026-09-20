@@ -83,7 +83,7 @@
             <section x-show="step === 2" x-cloak>
                 <div class="section-heading">
                     <div><span>۰۲</span><h2>خدمات دلخواه</h2></div>
-                    <p>انتخاب خدمات اضافه اختیاری است و مبلغ نهایی شفاف محاسبه می‌شود.</p>
+                    <p>حداقل یک خدمت انتخاب کنید؛ مبلغ نهایی برابر مجموع قیمت خدمات انتخاب‌شده است.</p>
                 </div>
 
                 <div class="service-list" x-show="availableServices.length > 0">
@@ -105,7 +105,7 @@
 
                 <div class="booking-actions">
                     <button class="quiet-button" type="button" @click="step = 1">مرحله قبل</button>
-                    <button class="button" type="button" @click="step = 3">ادامه و انتخاب زمان</button>
+                    <button class="button" type="button" :disabled="selectedServiceIds.length === 0" @click="step = 3">ادامه و انتخاب زمان</button>
                 </div>
             </section>
 
@@ -143,7 +143,7 @@
 
                 <div class="quote-bar" x-show="quote">
                     <span>مدت تقریبی: <b x-text="`${durationMinutes} دقیقه`"></b></span>
-                    <span>{{ $usesOnlineDeposit ? 'مبلغ بیعانه آنلاین' : 'بیعانه قابل پیگیری' }}: <b x-text="quote ? money(quote.deposit_amount) : '—'"></b></span>
+                    <span>{{ $usesOnlineDeposit ? 'مبلغ پرداخت آنلاین' : 'مبلغ قابل پیگیری' }}: <b x-text="quote ? money(quote.total_amount) : '—'"></b></span>
                 </div>
 
                 <div class="booking-actions">
@@ -179,7 +179,7 @@
                             <div><dt>تاریخ</dt><dd x-text="longDate(selectedDate)"></dd></div>
                             <div><dt>ساعت</dt><dd x-text="time(selectedSlot)"></dd></div>
                             <div><dt>مبلغ کل</dt><dd x-text="quote ? money(quote.total_amount) : '—'"></dd></div>
-                            <div class="summary-total"><dt>{{ $usesOnlineDeposit ? 'بیعانه قابل پرداخت' : 'بیعانه هنگام هماهنگی' }}</dt><dd x-text="quote ? money(quote.deposit_amount) : '—'"></dd></div>
+                            <div class="summary-total"><dt>{{ $usesOnlineDeposit ? 'مبلغ قابل پرداخت' : 'مبلغ هنگام هماهنگی' }}</dt><dd x-text="quote ? money(quote.total_amount) : '—'"></dd></div>
                         </dl>
                     </aside>
                 </div>

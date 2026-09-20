@@ -5,11 +5,11 @@
             <dl class="detail-list">
                 <div><dt>موبایل</dt><dd dir="ltr">{{ $reservation->customer->mobile }}</dd></div>
                 <div><dt>آرایشگر</dt><dd>{{ $reservation->barber->name }}</dd></div>
-                <div><dt>شروع</dt><dd dir="ltr">{{ $reservation->starts_at->format('Y/m/d — H:i') }}</dd></div>
-                <div><dt>پایان</dt><dd dir="ltr">{{ $reservation->ends_at->format('Y/m/d — H:i') }}</dd></div>
+                <div><dt>شروع</dt><dd>{{ \App\Support\JalaliDate::format($reservation->starts_at) }}</dd></div>
+                <div><dt>پایان</dt><dd>{{ \App\Support\JalaliDate::format($reservation->ends_at) }}</dd></div>
                 <div><dt>خدمات</dt><dd>{{ $reservation->services->pluck('pivot.name_snapshot')->join('، ') ?: 'فقط خدمت پایه' }}</dd></div>
                 <div><dt>مبلغ کل</dt><dd>{{ number_format($reservation->total_amount) }} ریال</dd></div>
-                <div><dt>بیعانه</dt><dd>{{ number_format($reservation->deposit_amount) }} ریال ({{ $reservation->deposit_percentage }}٪)</dd></div>
+                <div><dt>مبلغ پرداخت</dt><dd>{{ number_format($reservation->total_amount) }} ریال</dd></div>
             </dl>
             @if($reservation->notes)<div class="admin-note"><strong>یادداشت مشتری</strong><p>{{ $reservation->notes }}</p></div>@endif
         </section>

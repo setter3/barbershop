@@ -21,7 +21,6 @@ class SettingsController extends Controller
     {
         $types = [
             'base_price' => 'integer',
-            'deposit_percentage' => 'integer',
             'slot_duration_minutes' => 'integer',
             'hold_minutes' => 'integer',
         ];
@@ -34,6 +33,12 @@ class SettingsController extends Controller
                 'is_public' => ! in_array($key, $private, true),
             ]);
         }
+
+        Setting::query()->updateOrCreate(['key' => 'deposit_percentage'], [
+            'value' => '100',
+            'type' => 'integer',
+            'is_public' => true,
+        ]);
 
         return back()->with('success', 'تنظیمات سایت ذخیره شد.');
     }

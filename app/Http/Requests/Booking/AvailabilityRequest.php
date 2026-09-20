@@ -26,7 +26,7 @@ class AvailabilityRequest extends FormRequest
         return [
             'barber_id' => ['required', 'integer', Rule::exists('barbers', 'id')->where('is_active', true)],
             'date' => ['required', 'date_format:Y-m-d', 'after_or_equal:today'],
-            'service_ids' => ['sometimes', 'array', 'max:20'],
+            'service_ids' => ['required', 'array', 'min:1', 'max:20'],
             'service_ids.*' => ['integer', 'distinct', Rule::exists('services', 'id')->where('is_active', true)],
         ];
     }

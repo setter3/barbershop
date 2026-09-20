@@ -31,6 +31,8 @@ class BarberRequest extends FormRequest
             'schedules.*.is_active' => ['nullable', 'boolean'],
             'schedules.*.starts_at' => ['required', 'date_format:H:i'],
             'schedules.*.ends_at' => ['required', 'date_format:H:i'],
+            'schedules.*.break_starts_at' => ['nullable', 'date_format:H:i'],
+            'schedules.*.break_ends_at' => ['nullable', 'date_format:H:i'],
         ];
     }
 
@@ -40,6 +42,17 @@ class BarberRequest extends FormRequest
             foreach ((array) $this->input('schedules', []) as $weekday => $schedule) {
                 if (($schedule['is_active'] ?? false) && ($schedule['starts_at'] ?? '') >= ($schedule['ends_at'] ?? '')) {
                     $validator->errors()->add("schedules.$weekday.ends_at", 'ساعت پایان باید بعد از ساعت شروع باشد.');
+                }
+
+                $breakStartsAt = $schedule['break_starts_at'] ?? null;
+                $breakEndsAt = $schedule['break_ends_at'] ?? null;
+
+                if (($breakStartsAt && ! $breakEndsAt) || (! $breakStartsAt && $breakEndsAt)) {
+                    $validator->errors()->add("schedules.$weekday.break_starts_at", 'شروع و پایان استراحت را با هم وارد کنید.');
+                } elseif ($breakStartsAt && ($breakStartsAt <= ($schedule['starts_at'] ?? '')
+                    || $breakEndsAt >= ($schedule['ends_at'] ?? '')
+                    || $breakStartsAt >= $breakEndsAt)) {
+                    $validator->errors()->add("schedules.$weekday.break_starts_at", 'بازه استراحت باید داخل ساعت کاری باشد.');
                 }
             }
         }];

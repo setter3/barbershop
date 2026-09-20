@@ -10,7 +10,10 @@
                     <h2>{{ $barber->name }}</h2>
                     <p>{{ $barber->bio ?: 'هنوز معرفی کوتاهی ثبت نشده است.' }}</p>
                     <dl><div><dt>خدمات</dt><dd>{{ $barber->services_count }}</dd></div><div><dt>رزروها</dt><dd>{{ $barber->reservations_count }}</dd></div></dl>
-                    <a class="button button-secondary" href="{{ route('admin.barbers.edit', $barber) }}">ویرایش و برنامه کاری</a>
+                    <div class="admin-card-actions">
+                        <a class="button button-secondary" href="{{ route('admin.barbers.edit', $barber) }}">ویرایش و برنامه کاری</a>
+                        <form method="POST" action="{{ route('admin.barbers.destroy', $barber) }}" onsubmit="return confirm('این آرایشگر حذف شود؟');">@csrf @method('DELETE')<button class="danger-link" type="submit">حذف آرایشگر</button></form>
+                    </div>
                 </div>
             </article>
         @empty

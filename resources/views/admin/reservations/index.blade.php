@@ -1,7 +1,7 @@
 <x-layouts.admin title="رزروها" heading="دفتر رزروها" eyebrow="جست‌وجو و پیگیری">
     <form class="filter-bar panel" method="GET" action="{{ route('admin.reservations.index') }}">
         <label class="field"><span>جست‌وجوی مشتری یا کد</span><input name="search" value="{{ request('search') }}" placeholder="نام، موبایل یا کد پیگیری"></label>
-        <label class="field"><span>تاریخ</span><input name="date" type="date" value="{{ request('date') }}"></label>
+        <label class="field"><span>تاریخ شمسی</span><input name="date" inputmode="numeric" value="{{ request('date') }}" placeholder="۱۴۰۵/۰۱/۱۵"></label>
         <label class="field"><span>آرایشگر</span><select name="barber_id"><option value="">همه</option>@foreach($barbers as $barber)<option value="{{ $barber->id }}" @selected((string) request('barber_id') === (string) $barber->id)>{{ $barber->name }}</option>@endforeach</select></label>
         <label class="field"><span>وضعیت</span><select name="status"><option value="">همه</option>@foreach($statuses as $status)<option value="{{ $status->value }}" @selected(request('status') === $status->value)>{{ $status->label() }}</option>@endforeach</select></label>
         <button class="button" type="submit">اعمال فیلتر</button>
@@ -20,7 +20,7 @@
                         <tr>
                             <td><strong>{{ $reservation->customer->full_name }}</strong><small dir="ltr">{{ $reservation->customer->mobile }}</small></td>
                             <td>{{ $reservation->barber->name }}</td>
-                            <td dir="ltr">{{ $reservation->starts_at->format('Y/m/d — H:i') }}</td>
+                            <td>{{ \App\Support\JalaliDate::format($reservation->starts_at) }}</td>
                             <td>{{ number_format($reservation->total_amount) }} <small>ریال</small></td>
                             <td><span class="admin-status is-{{ $reservation->status->value }}">{{ $reservation->status->label() }}</span></td>
                             <td><span class="admin-status is-{{ $reservation->payment_status->value }}">{{ $reservation->payment_status->label() }}</span></td>

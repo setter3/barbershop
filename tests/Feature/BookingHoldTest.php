@@ -42,9 +42,9 @@ class BookingHoldTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.status', ReservationStatus::PendingPayment->value)
             ->assertJsonPath('data.payment_status', PaymentStatus::Unpaid->value)
-            ->assertJsonPath('data.total_amount', 150_000)
-            ->assertJsonPath('data.deposit_percentage', 25)
-            ->assertJsonPath('data.deposit_amount', 37_500)
+            ->assertJsonPath('data.total_amount', 50_000)
+            ->assertJsonPath('data.deposit_percentage', 100)
+            ->assertJsonPath('data.deposit_amount', 50_000)
             ->assertJsonPath('data.redirect_url', fn (string $url): bool => str_contains($url, '/booking/'))
             ->assertJsonPath('data.payment_url', fn (string $url): bool => str_contains($url, '/payment/zibal'));
 
@@ -72,8 +72,8 @@ class BookingHoldTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.duration_minutes', 45)
             ->assertJsonPath('data.slots.0', $startsAt->toIso8601String())
-            ->assertJsonPath('data.quote.total_amount', 150_000)
-            ->assertJsonPath('data.quote.deposit_amount', 37_500);
+            ->assertJsonPath('data.quote.total_amount', 50_000)
+            ->assertJsonPath('data.quote.deposit_amount', 50_000);
     }
 
     public function test_second_request_for_same_slot_is_rejected_without_residue(): void

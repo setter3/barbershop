@@ -43,6 +43,20 @@ class ServiceController extends Controller
         return back()->with('success', 'خدمت به‌روزرسانی شد.');
     }
 
+    public function destroy(Service $service): RedirectResponse
+    {
+        if ($service->reservations()->exists()) {
+            return back()->withErrors([
+                'delete' => 'این خدمت در سوابق رزرو استفاده شده و برای حفظ فاکتورها قابل حذف نیست؛ می‌توانید آن را غیرفعال کنید.',
+            ]);
+        }
+
+        $service->barbers()->detach();
+        $service->delete();
+
+        return redirect()->route('admin.services.index')->with('success', 'خدمت با موفقیت حذف شد.');
+    }
+
     private function attributes(ServiceRequest $request, ?Service $service = null): array
     {
         $data = $request->validated();

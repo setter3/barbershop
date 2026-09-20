@@ -28,10 +28,12 @@ class BookingQuoteCalculator
             ]);
         }
 
-        $basePrice = $this->settings->basePriceAmount();
+        // Services are the source of truth for the appointment price. The old
+        // global base price caused a selected service to be charged twice.
+        $basePrice = 0;
         $servicesAmount = (int) $services->sum('price_amount');
         $totalAmount = $basePrice + $servicesAmount;
-        $depositPercentage = $this->settings->depositPercentage();
+        $depositPercentage = 100;
 
         return [
             'services' => $services,
@@ -40,7 +42,7 @@ class BookingQuoteCalculator
             'services_amount' => $servicesAmount,
             'total_amount' => $totalAmount,
             'deposit_percentage' => $depositPercentage,
-            'deposit_amount' => (int) ceil($totalAmount * $depositPercentage / 100),
+            'deposit_amount' => $totalAmount,
             'currency' => $this->settings->currency(),
         ];
     }

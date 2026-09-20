@@ -29,13 +29,15 @@
         </div>
     </section>
     <section class="admin-form-section panel admin-form-wide">
-        <div class="admin-section-head"><div><p class="eyebrow">تقویم هفتگی</p><h2>ساعت کاری ثابت</h2></div><p>هر روز می‌تواند فعال یا تعطیل باشد.</p></div>
+        <div class="admin-section-head"><div><p class="eyebrow">تقویم هفتگی</p><h2>ساعت کاری ثابت</h2></div><p>برای هر روز می‌توانید یک بازه استراحت نیز تعیین کنید.</p></div>
         <div class="schedule-grid">
             @foreach ($weekdays as $weekday => $label)
                 <div class="schedule-row">
                     <label class="schedule-toggle"><input name="schedules[{{ $weekday }}][is_active]" type="hidden" value="0"><input name="schedules[{{ $weekday }}][is_active]" type="checkbox" value="1" @checked(old("schedules.$weekday.is_active", $schedules[$weekday]['is_active']))><strong>{{ $label }}</strong></label>
                     <label><span>از</span><input name="schedules[{{ $weekday }}][starts_at]" type="time" value="{{ old("schedules.$weekday.starts_at", $schedules[$weekday]['starts_at']) }}"></label>
                     <label><span>تا</span><input name="schedules[{{ $weekday }}][ends_at]" type="time" value="{{ old("schedules.$weekday.ends_at", $schedules[$weekday]['ends_at']) }}"></label>
+                    <label><span>شروع استراحت</span><input name="schedules[{{ $weekday }}][break_starts_at]" type="time" value="{{ old("schedules.$weekday.break_starts_at", $schedules[$weekday]['break_starts_at']) }}"></label>
+                    <label><span>پایان استراحت</span><input name="schedules[{{ $weekday }}][break_ends_at]" type="time" value="{{ old("schedules.$weekday.break_ends_at", $schedules[$weekday]['break_ends_at']) }}"></label>
                 </div>
             @endforeach
         </div>

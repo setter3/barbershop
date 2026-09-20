@@ -164,7 +164,7 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .check-list { display: grid; gap: 0.55rem; }
 .check-list label { display: flex; align-items: center; gap: 0.75rem; border: 1px solid #2c2a25; border-radius: var(--radius-sm); padding: 0.7rem 0.8rem; cursor: pointer; }
 .schedule-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
-.schedule-row { display: grid; grid-template-columns: 1.1fr 1fr 1fr; align-items: end; gap: 0.6rem; border: 1px solid #292722; border-radius: var(--radius-sm); padding: 0.7rem; background: rgba(255,255,255,0.01); }
+.schedule-row { display: grid; grid-template-columns: 1.1fr repeat(4, minmax(0, 1fr)); align-items: end; gap: 0.6rem; border: 1px solid #292722; border-radius: var(--radius-sm); padding: 0.7rem; background: rgba(255,255,255,0.01); }
 .schedule-row label { display: grid; gap: 0.2rem; color: var(--color-muted); font-size: 0.68rem; }
 .schedule-row input[type='time'] { min-width: 0; border: 1px solid #302e29; border-radius: 0.45rem; padding: 0.45rem; color: var(--color-cream); background: var(--color-surface-raised); color-scheme: dark; }
 .schedule-toggle { display: flex !important; align-items: center; gap: 0.5rem !important; padding-bottom: 0.5rem; color: var(--color-cream) !important; font-size: 0.82rem !important; }
@@ -177,6 +177,15 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .compact-list span { display: grid; }
 .compact-list small { color: var(--color-muted); }
 .danger-link { border: 0; color: var(--color-danger); background: transparent; }
+.row-actions, .admin-card-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.row-actions form, .admin-card-actions form { margin: 0; }
+.button-danger { color: #fff; background: var(--color-danger); border-color: var(--color-danger); }
+.danger-zone { border-color: color-mix(in srgb, var(--color-danger) 42%, transparent); }
+
+@media (max-width: 900px) {
+    .schedule-row { grid-template-columns: 1fr 1fr; }
+    .schedule-toggle { grid-column: 1 / -1; }
+}
 .muted-copy, .form-hint { color: var(--color-muted); font-size: 0.75rem; }
 .filter-bar { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr) auto auto; align-items: end; gap: 0.7rem; padding: 1rem; }
 .filter-bar .field { margin: 0; }

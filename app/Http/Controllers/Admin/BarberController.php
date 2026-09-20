@@ -84,6 +84,22 @@ class BarberController extends Controller
         return back()->with('success', 'اطلاعات آرایشگر به‌روزرسانی شد.');
     }
 
+    public function destroy(Barber $barber): RedirectResponse
+    {
+        if ($barber->reservations()->exists()) {
+            return back()->withErrors([
+                'delete' => 'این آرایشگر سابقه رزرو دارد و برای حفظ سوابق قابل حذف نیست؛ می‌توانید او را غیرفعال کنید.',
+            ]);
+        }
+
+        DB::transaction(function () use ($barber): void {
+            $barber->services()->detach();
+            $barber->delete();
+        });
+
+        return redirect()->route('admin.barbers.index')->with('success', 'آرایشگر با موفقیت حذف شد.');
+    }
+
     private function syncRelations(Barber $barber, array $data): void
     {
         $barber->services()->sync($data['service_ids'] ?? []);
@@ -94,13 +110,33 @@ class BarberController extends Controller
                 continue;
             }
 
-            $barber->schedules()->create([
-                'weekday' => $weekday,
-                'starts_at' => $schedule['starts_at'],
-                'ends_at' => $schedule['ends_at'],
-                'is_active' => true,
-            ]);
+            $windows = $this->scheduleWindows($schedule);
+
+            foreach ($windows as [$startsAt, $endsAt]) {
+                $barber->schedules()->create([
+                    'weekday' => $weekday,
+                    'starts_at' => $startsAt,
+                    'ends_at' => $endsAt,
+                    'is_active' => true,
+                ]);
+            }
         }
+    }
+
+    /** @return list<array{string, string}> */
+    private function scheduleWindows(array $schedule): array
+    {
+        $breakStartsAt = $schedule['break_starts_at'] ?? null;
+        $breakEndsAt = $schedule['break_ends_at'] ?? null;
+
+        if ($breakStartsAt && $breakEndsAt) {
+            return [
+                [$schedule['starts_at'], $breakStartsAt],
+                [$breakEndsAt, $schedule['ends_at']],
+            ];
+        }
+
+        return [[$schedule['starts_at'], $schedule['ends_at']]];
     }
 
     private function uniqueSlug(string $name): string
@@ -118,15 +154,19 @@ class BarberController extends Controller
 
     private function scheduleRows(?Barber $barber = null): array
     {
-        $existing = $barber?->schedules->keyBy('weekday') ?? collect();
+        $existing = $barber?->schedules->groupBy('weekday') ?? collect();
 
         return collect(range(0, 6))->mapWithKeys(function (int $weekday) use ($existing): array {
-            $schedule = $existing->get($weekday);
+            $windows = $existing->get($weekday, collect())->sortBy('starts_at')->values();
+            $first = $windows->first();
+            $last = $windows->last();
 
             return [$weekday => [
-                'is_active' => (bool) $schedule,
-                'starts_at' => $schedule ? substr((string) $schedule->starts_at, 0, 5) : '10:00',
-                'ends_at' => $schedule ? substr((string) $schedule->ends_at, 0, 5) : '21:00',
+                'is_active' => $windows->isNotEmpty(),
+                'starts_at' => $first ? substr((string) $first->starts_at, 0, 5) : '10:00',
+                'ends_at' => $last ? substr((string) $last->ends_at, 0, 5) : '18:00',
+                'break_starts_at' => $windows->count() > 1 ? substr((string) $first->ends_at, 0, 5) : '',
+                'break_ends_at' => $windows->count() > 1 ? substr((string) $last->starts_at, 0, 5) : '',
             ]];
         })->all();
     }

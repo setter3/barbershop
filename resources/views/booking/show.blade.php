@@ -29,7 +29,7 @@
             @if (session('payment_error'))
                 <p class="form-error" role="alert">{{ session('payment_error') }}</p>
             @elseif (request('payment') === 'success')
-                <p class="confirmation-message">پرداخت بیعانه با موفقیت تأیید شد و نوبت شما قطعی است.</p>
+                <p class="confirmation-message">پرداخت کامل با موفقیت تأیید شد و نوبت شما قطعی است.</p>
             @elseif (request('payment') === 'failed')
                 <p class="form-error" role="alert">پرداخت انجام نشد یا توسط درگاه تأیید نشد. اگر مبلغی از حساب شما کسر شده است با پشتیبانی تماس بگیرید.</p>
             @elseif (request('payment') === 'verification-error')
@@ -41,17 +41,17 @@
             @if ($isExpired)
                 <p class="confirmation-message">مهلت این رزرو موقت تمام شده و زمان انتخابی آزاد شده است. لطفاً رزرو تازه‌ای ثبت کنید.</p>
             @elseif ($reservation->status === \App\Enums\ReservationStatus::PendingPayment)
-                <p class="confirmation-message">زمان انتخابی تا ساعت {{ $reservation->expires_at?->format('H:i') }} برای شما نگه داشته شده است. با پرداخت ۳۰٪ بیعانه، نوبت قطعی می‌شود.</p>
+                <p class="confirmation-message">زمان انتخابی تا ساعت {{ $reservation->expires_at?->format('H:i') }} برای شما نگه داشته شده است. با پرداخت کامل مبلغ، نوبت قطعی می‌شود.</p>
             @else
                 <p class="confirmation-message">رزرو شما ثبت شده است. کد پیگیری را تا زمان مراجعه نگه دارید.</p>
             @endif
 
             <dl class="confirmation-details">
                 <div><dt>آرایشگر</dt><dd>{{ $reservation->barber->name }}</dd></div>
-                <div><dt>زمان مراجعه</dt><dd>{{ $reservation->starts_at->format('Y/m/d - H:i') }}</dd></div>
+                <div><dt>زمان مراجعه</dt><dd>{{ \App\Support\JalaliDate::format($reservation->starts_at) }}</dd></div>
                 <div><dt>موبایل</dt><dd dir="ltr">{{ $maskedMobile }}</dd></div>
                 <div><dt>مبلغ کل</dt><dd>{{ number_format($reservation->total_amount) }} ریال</dd></div>
-                <div><dt>بیعانه</dt><dd>{{ number_format($reservation->deposit_amount) }} ریال</dd></div>
+                <div><dt>مبلغ قابل پرداخت</dt><dd>{{ number_format($reservation->total_amount) }} ریال</dd></div>
             </dl>
 
             @if ($reservation->services->isNotEmpty())
@@ -66,7 +66,7 @@
             @elseif ($reservation->status === \App\Enums\ReservationStatus::PendingPayment)
                 <form method="POST" action="{{ route('booking.payments.zibal.start', $reservation) }}">
                     @csrf
-                    <button class="button" type="submit">پرداخت {{ number_format($reservation->deposit_amount) }} ریال با زیبال</button>
+                    <button class="button" type="submit">پرداخت {{ number_format($reservation->total_amount) }} ریال با زیبال</button>
                 </form>
             @endif
         </main>

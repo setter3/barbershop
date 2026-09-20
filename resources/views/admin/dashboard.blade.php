@@ -23,7 +23,7 @@
                             <tr>
                                 <td><strong>{{ $reservation->customer->full_name }}</strong><small dir="ltr">{{ $reservation->customer->mobile }}</small></td>
                                 <td>{{ $reservation->barber->name }}</td>
-                                <td dir="ltr">{{ $reservation->starts_at->format('Y/m/d — H:i') }}</td>
+                                <td>{{ \App\Support\JalaliDate::format($reservation->starts_at) }}</td>
                                 <td><span class="admin-status is-{{ $reservation->status->value }}">{{ $reservation->status->label() }}</span></td>
                                 <td><a class="row-link" href="{{ route('admin.reservations.show', $reservation) }}">جزئیات</a></td>
                             </tr>

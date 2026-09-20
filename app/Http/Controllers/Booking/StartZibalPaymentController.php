@@ -36,34 +36,41 @@ class StartZibalPaymentController extends Controller
                     throw new RuntimeException('This reservation is no longer payable.');
                 }
 
-                if ($reservation->deposit_amount <= 1000) {
-                    throw new RuntimeException('The deposit is below the gateway minimum.');
+                if ($reservation->total_amount <= 1000) {
+                    throw new RuntimeException('The payment is below the gateway minimum.');
                 }
 
                 if ($reservation->currency !== 'IRR') {
                     throw new RuntimeException('Zibal payments must use IRR.');
                 }
 
+                $reservation->payments()
+                    ->where('provider', 'zibal')
+                    ->where('status', PaymentStatus::Pending)
+                    ->where('amount', '!=', $reservation->total_amount)
+                    ->update(['status' => PaymentStatus::Failed]);
+
                 $payment = $reservation->payments()
                     ->where('provider', 'zibal')
                     ->where('status', PaymentStatus::Pending)
+                    ->where('amount', $reservation->total_amount)
                     ->whereNotNull('authority')
                     ->latest('id')
                     ->first();
 
                 if (! $payment) {
                     $response = $gateway->request(
-                        amount: $reservation->deposit_amount,
+                        amount: $reservation->total_amount,
                         callbackUrl: route('booking.payments.zibal.callback'),
                         orderId: $reservation->reference,
                         mobile: $reservation->customer->mobile,
-                        description: 'بیعانه رزرو آرشام - '.$reservation->reference,
+                        description: 'پرداخت کامل رزرو آرشام - '.$reservation->reference,
                     );
 
                     $payment = $reservation->payments()->create([
                         'provider' => 'zibal',
                         'authority' => (string) $response['trackId'],
-                        'amount' => $reservation->deposit_amount,
+                        'amount' => $reservation->total_amount,
                         'currency' => $reservation->currency,
                         'status' => PaymentStatus::Pending,
                         'payload' => ['request' => $response],

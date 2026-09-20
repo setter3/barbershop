@@ -31,7 +31,7 @@ class ZibalPaymentTest extends TestCase
         ]);
     }
 
-    public function test_customer_is_redirected_to_zibal_for_exact_deposit_amount(): void
+    public function test_customer_is_redirected_to_zibal_for_the_full_reservation_amount(): void
     {
         $reservation = $this->pendingReservation();
         Http::fake([
@@ -49,7 +49,7 @@ class ZibalPaymentTest extends TestCase
             'reservation_id' => $reservation->getKey(),
             'provider' => 'zibal',
             'authority' => '15966442233311',
-            'amount' => 300_000,
+            'amount' => 1_000_000,
             'status' => PaymentStatus::Pending->value,
         ]);
         $this->assertSame(PaymentStatus::Pending, $reservation->fresh()->payment_status);
@@ -57,7 +57,7 @@ class ZibalPaymentTest extends TestCase
         Http::assertSent(function (Request $request) use ($reservation): bool {
             return $request->url() === 'https://gateway.zibal.test/v1/request'
                 && $request['merchant'] === 'test-merchant'
-                && $request['amount'] === 300_000
+                && $request['amount'] === 1_000_000
                 && $request['orderId'] === $reservation->reference
                 && $request['mobile'] === '09121234567'
                 && str_contains($request['callbackUrl'], '/booking/payments/zibal/callback');
@@ -97,7 +97,7 @@ class ZibalPaymentTest extends TestCase
             'https://gateway.zibal.test/v1/verify' => Http::response([
                 'result' => 100,
                 'status' => 1,
-                'amount' => 300_000,
+                'amount' => 1_000_000,
                 'orderId' => $reservation->reference,
                 'refNumber' => 87654321,
                 'paidAt' => '2030-01-01T10:00:00.000000',
@@ -138,7 +138,7 @@ class ZibalPaymentTest extends TestCase
             'https://gateway.zibal.test/v1/verify' => Http::response([
                 'result' => 100,
                 'status' => 1,
-                'amount' => 299_999,
+                'amount' => 999_999,
                 'orderId' => $reservation->reference,
             ]),
         ]);
@@ -193,8 +193,8 @@ class ZibalPaymentTest extends TestCase
                 'status' => ReservationStatus::PendingPayment,
                 'payment_status' => PaymentStatus::Unpaid,
                 'total_amount' => 1_000_000,
-                'deposit_percentage' => 30,
-                'deposit_amount' => 300_000,
+                'deposit_percentage' => 100,
+                'deposit_amount' => 1_000_000,
                 'currency' => 'IRR',
                 'expires_at' => now()->addMinutes(10),
             ]);
