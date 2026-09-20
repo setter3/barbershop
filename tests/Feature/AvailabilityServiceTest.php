@@ -92,4 +92,30 @@ class AvailabilityServiceTest extends TestCase
 
         $this->assertTrue($slots->contains(fn (CarbonImmutable $slot): bool => $slot->format('H:i') === '09:00'));
     }
+
+    public function test_barber_cadence_is_used_and_break_window_is_never_offered(): void
+    {
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2030-01-01 08:00:00', 'Asia/Tehran'));
+        $date = CarbonImmutable::now('Asia/Tehran')->addDay()->startOfDay();
+        $barber = Barber::factory()->create(['slot_duration_minutes' => 60]);
+
+        BarberSchedule::factory()->for($barber)->create([
+            'weekday' => $date->dayOfWeek,
+            'starts_at' => '10:00:00',
+            'ends_at' => '16:00:00',
+        ]);
+        BarberSchedule::factory()->for($barber)->create([
+            'weekday' => $date->dayOfWeek,
+            'starts_at' => '17:00:00',
+            'ends_at' => '18:00:00',
+        ]);
+
+        $slots = app(AvailabilityService::class)
+            ->forDate($barber, $date, 60)
+            ->map(fn (CarbonImmutable $slot): string => $slot->format('H:i'))
+            ->all();
+
+        $this->assertSame(['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '17:00'], $slots);
+        $this->assertNotContains('16:00', $slots);
+    }
 }

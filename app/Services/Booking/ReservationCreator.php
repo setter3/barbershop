@@ -94,7 +94,7 @@ class ReservationCreator
                     throw new SlotUnavailableException($exception);
                 }
 
-                $claimStart = $claimStart->addMinutes($this->settings->slotDurationMinutes());
+                $claimStart = $claimStart->addMinutes(max(1, (int) ($barber->slot_duration_minutes ?: $this->settings->slotDurationMinutes())));
             }
 
             return $reservation->load(['barber', 'customer', 'services', 'slotClaims']);

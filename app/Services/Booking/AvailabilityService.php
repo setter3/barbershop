@@ -52,7 +52,9 @@ class AvailabilityService
             })
             ->get();
 
-        $stepMinutes = $this->settings->slotDurationMinutes();
+        // Each barber owns their booking cadence. The global setting is only a
+        // fallback for legacy records that do not have a valid duration.
+        $stepMinutes = max(1, (int) ($barber->slot_duration_minutes ?: $this->settings->slotDurationMinutes()));
         $slots = collect();
 
         foreach ($schedules as $schedule) {
