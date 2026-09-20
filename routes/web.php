@@ -13,8 +13,32 @@ use App\Http\Controllers\Booking\HoldController;
 use App\Http\Controllers\Booking\ShowReservationController;
 use App\Http\Controllers\Booking\StartZibalPaymentController;
 use App\Http\Controllers\Booking\ZibalCallbackController;
+use App\Models\Barber;
 use App\Services\Booking\BusinessSettings;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/ops/fix-amin-hours-f06e9a74', function () {
+    return DB::transaction(function (): array {
+        $barber = Barber::query()->where('name', 'like', '%امین%')->firstOrFail();
+
+        $barber->update(['slot_duration_minutes' => 60]);
+        $barber->schedules()->delete();
+
+        foreach (range(0, 6) as $weekday) {
+            foreach ([['10:00:00', '16:00:00'], ['17:00:00', '18:00:00']] as [$startsAt, $endsAt]) {
+                $barber->schedules()->create([
+                    'weekday' => $weekday,
+                    'starts_at' => $startsAt,
+                    'ends_at' => $endsAt,
+                    'is_active' => true,
+                ]);
+            }
+        }
+
+        return ['barber_id' => $barber->getKey(), 'schedule_windows' => $barber->schedules()->count()];
+    });
+})->middleware('throttle:1,1');
 
 Route::get('/', function () {
     return view('home', ['usesOnlineDeposit' => app(BusinessSettings::class)->usesOnlineDeposit()]);
