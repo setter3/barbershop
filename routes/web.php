@@ -13,80 +13,8 @@ use App\Http\Controllers\Booking\HoldController;
 use App\Http\Controllers\Booking\ShowReservationController;
 use App\Http\Controllers\Booking\StartZibalPaymentController;
 use App\Http\Controllers\Booking\ZibalCallbackController;
-use App\Models\Barber;
-use App\Models\Service;
-use App\Models\Setting;
 use App\Services\Booking\BusinessSettings;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
-
-Route::get('/ops/apply-amin-setup-4c8f2e91', function () {
-    $result = DB::transaction(function (): array {
-        $barber = Barber::query()->where('name', 'امین هیرتال')->first();
-
-        if (! $barber) {
-            $matches = Barber::query()->where('name', 'like', '%امین%')->get();
-            abort_unless($matches->count() === 1, 404);
-            $barber = $matches->first();
-        }
-
-        $barber->update([
-            'slot_duration_minutes' => 60,
-            'is_active' => true,
-        ]);
-
-        $services = collect([
-            ['slug' => 'uncard', 'name' => 'آنکارد', 'sort_order' => 10],
-            ['slug' => 'hair-style', 'name' => 'استایل', 'sort_order' => 20],
-        ])->map(function (array $attributes): Service {
-            return Service::query()->firstOrCreate(
-                ['slug' => $attributes['slug']],
-                [
-                    'name' => $attributes['name'],
-                    'description' => 'قیمت این خدمت را از پنل مدیریت تعیین و سپس فعال کنید.',
-                    'price_amount' => 0,
-                    'duration_minutes' => 0,
-                    'is_active' => false,
-                    'sort_order' => $attributes['sort_order'],
-                ],
-            );
-        });
-
-        $barber->services()->syncWithoutDetaching($services->pluck('id')->all());
-        $barber->schedules()->delete();
-
-        foreach (range(0, 6) as $weekday) {
-            foreach ([['10:00:00', '16:00:00'], ['17:00:00', '18:00:00']] as [$startsAt, $endsAt]) {
-                $barber->schedules()->create([
-                    'weekday' => $weekday,
-                    'starts_at' => $startsAt,
-                    'ends_at' => $endsAt,
-                    'is_active' => true,
-                ]);
-            }
-        }
-
-        foreach ([
-            'base_price' => '0',
-            'deposit_percentage' => '100',
-            'booking_mode' => 'online_deposit',
-        ] as $key => $value) {
-            Setting::query()->updateOrCreate(['key' => $key], [
-                'value' => $value,
-                'type' => $key === 'booking_mode' ? 'string' : 'integer',
-                'is_public' => true,
-            ]);
-        }
-
-        return [
-            'barber_id' => $barber->getKey(),
-            'schedule_windows' => $barber->schedules()->count(),
-            'services' => $services->pluck('name')->all(),
-        ];
-    });
-
-    return response()->json($result)->header('Cache-Control', 'no-store');
-});
 
 Route::get('/', function () {
     return view('home', ['usesOnlineDeposit' => app(BusinessSettings::class)->usesOnlineDeposit()]);
