@@ -1,5 +1,5 @@
 <x-layouts.admin title="خدمات" heading="منوی خدمات" eyebrow="قیمت و زمان">
-    <div class="admin-page-actions"><p>خدمات جانبی، قیمت و مدت زمانی که به نوبت اضافه می‌شود.</p><a class="button" href="{{ route('admin.services.create') }}">افزودن خدمت</a></div>
+    <div class="admin-page-actions"><p>خدمات، قیمت و مدت تقریبی؛ طول نوبت از تنظیم آرایشگر خوانده می‌شود.</p><a class="button" href="{{ route('admin.services.create') }}">افزودن خدمت</a></div>
     <section class="admin-section panel">
         @if ($services->isEmpty())
             <div class="admin-empty"><strong>هنوز خدمتی ثبت نشده</strong><span>خدمت اول را برای نمایش در مسیر رزرو اضافه کنید.</span></div>

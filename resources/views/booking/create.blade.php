@@ -92,7 +92,7 @@
                             <input type="checkbox" :value="service.id" @change="toggleService(service.id)" :checked="selectedServiceIds.includes(service.id)">
                             <span>
                                 <strong x-text="service.name"></strong>
-                                <small x-text="service.description || `${service.duration_minutes} دقیقه زمان اضافه`"></small>
+                                <small x-text="service.description || `مدت خدمت: ${service.duration_minutes} دقیقه`"></small>
                             </span>
                             <b x-text="service.price_amount ? money(service.price_amount) : 'بدون هزینه اضافه'"></b>
                         </label>

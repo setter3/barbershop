@@ -4,7 +4,7 @@
         <label class="field"><span>نام خدمت</span><input name="name" value="{{ old('name', $service->name) }}" required></label>
         <label class="field"><span>شناسه لاتین <small>اختیاری</small></span><input name="slug" dir="ltr" value="{{ old('slug', $service->slug) }}" placeholder="beard-design"></label>
         <label class="field"><span>قیمت به ریال</span><input name="price_amount" type="number" min="0" value="{{ old('price_amount', $service->price_amount ?: 0) }}" required></label>
-        <label class="field"><span>زمان افزوده به دقیقه</span><input name="duration_minutes" type="number" min="0" value="{{ old('duration_minutes', $service->duration_minutes ?: 0) }}" required></label>
+        <label class="field"><span>مدت تقریبی خدمت به دقیقه <small>اطلاعاتی؛ نوبت‌ها طبق مدت آرایشگر هستند</small></span><input name="duration_minutes" type="number" min="0" value="{{ old('duration_minutes', $service->duration_minutes ?: 0) }}" required></label>
         <label class="field"><span>ترتیب نمایش</span><input name="sort_order" type="number" min="0" value="{{ old('sort_order', $service->sort_order ?: 0) }}"></label>
     </div>
     <label class="field"><span>توضیح کوتاه</span><textarea name="description" rows="4">{{ old('description', $service->description) }}</textarea></label>

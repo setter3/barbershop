@@ -51,7 +51,7 @@ class BookingHoldTest extends TestCase
         $this->assertGuest();
         $this->assertDatabaseHas('customers', ['mobile' => '+989121234567']);
         $this->assertDatabaseCount('reservations', 1);
-        $this->assertDatabaseCount('slot_claims', 2);
+        $this->assertDatabaseCount('slot_claims', 1);
         $this->assertDatabaseHas('reservation_service', [
             'service_id' => $service->getKey(),
             'name_snapshot' => $service->name,
@@ -70,7 +70,7 @@ class BookingHoldTest extends TestCase
             'service_ids' => [$service->getKey()],
         ]))
             ->assertOk()
-            ->assertJsonPath('data.duration_minutes', 45)
+            ->assertJsonPath('data.duration_minutes', 30)
             ->assertJsonPath('data.slots.0', $startsAt->toIso8601String())
             ->assertJsonPath('data.quote.total_amount', 50_000)
             ->assertJsonPath('data.quote.deposit_amount', 50_000);
@@ -97,7 +97,7 @@ class BookingHoldTest extends TestCase
 
         $this->assertDatabaseCount('reservations', 1);
         $this->assertDatabaseCount('customers', 1);
-        $this->assertDatabaseCount('slot_claims', 2);
+        $this->assertDatabaseCount('slot_claims', 1);
     }
 
     public function test_database_unique_constraint_guards_slot_claims(): void

@@ -37,7 +37,9 @@ class BookingQuoteCalculator
 
         return [
             'services' => $services,
-            'duration_minutes' => max(1, $barber->slot_duration_minutes + (int) $services->sum('duration_minutes')),
+            // This business sells fixed appointments. Service durations remain
+            // descriptive and must not silently turn a one-hour slot into two.
+            'duration_minutes' => max(1, (int) $barber->slot_duration_minutes),
             'base_price_amount' => $basePrice,
             'services_amount' => $servicesAmount,
             'total_amount' => $totalAmount,
