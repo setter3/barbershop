@@ -207,8 +207,10 @@ class ZibalPaymentTest extends TestCase
             'payment' => 'success',
         ]));
 
-        $this->assertSame(ReservationStatus::Confirmed, $reservation->fresh()->status);
-        $this->assertSame(PaymentStatus::Paid, $payment->fresh()->status);
+        $reservation->refresh();
+        $payment->refresh();
+        $this->assertSame(ReservationStatus::Confirmed, $reservation->status);
+        $this->assertSame(PaymentStatus::Paid, $payment->status);
         $this->assertSame('failed', data_get($payment->payload, 'sms.targets.customer.status'));
         $this->assertSame('failed', data_get($payment->payload, 'sms.targets.owner.status'));
     }
