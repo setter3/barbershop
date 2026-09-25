@@ -6,11 +6,13 @@ use App\Enums\PaymentStatus;
 use App\Enums\ReservationStatus;
 use App\Models\Barber;
 use App\Models\BarberSchedule;
+use App\Models\Payment;
 use App\Models\Reservation;
 use App\Models\Service;
 use App\Models\Setting;
 use App\Models\SlotClaim;
 use App\Models\User;
+use App\Support\JalaliDate;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -64,6 +66,63 @@ class AdminManagementTest extends TestCase
         $this->actingAs($admin)->get(route('admin.reservations.index'))->assertOk();
         $this->actingAs($admin)->get(route('admin.reservations.show', $reservation))->assertOk();
         $this->actingAs($admin)->get(route('admin.settings.edit'))->assertOk();
+    }
+
+    public function test_reservation_reports_show_both_appointment_and_payment_dates(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $appointmentAt = CarbonImmutable::parse('2030-03-22 14:00:00', 'Asia/Tehran');
+        $paidAt = CarbonImmutable::parse('2030-03-20 09:30:00', 'Asia/Tehran');
+        $reservation = Reservation::factory()->create([
+            'starts_at' => $appointmentAt,
+            'ends_at' => $appointmentAt->addHour(),
+            'status' => ReservationStatus::Confirmed,
+            'payment_status' => PaymentStatus::Paid,
+        ]);
+        Payment::factory()->for($reservation)->create([
+            'status' => PaymentStatus::Paid,
+            'paid_at' => $paidAt,
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.reservations.index'))
+            ->assertOk()
+            ->assertSee(JalaliDate::format($appointmentAt))
+            ->assertSee(JalaliDate::format($paidAt));
+
+        $this->actingAs($admin)
+            ->get(route('admin.reservations.show', $reservation))
+            ->assertOk()
+            ->assertSee(JalaliDate::format($appointmentAt))
+            ->assertSee(JalaliDate::format($paidAt));
+    }
+
+    public function test_editing_a_paid_reservation_preserves_its_original_payment_date(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $paidAt = CarbonImmutable::parse('2030-03-20 09:30:00', 'Asia/Tehran');
+        $reservation = Reservation::factory()->create([
+            'status' => ReservationStatus::Confirmed,
+            'payment_status' => PaymentStatus::Paid,
+        ]);
+        $payment = Payment::factory()->for($reservation)->create([
+            'provider' => 'manual',
+            'status' => PaymentStatus::Paid,
+            'paid_at' => $paidAt,
+        ]);
+
+        CarbonImmutable::setTestNow($paidAt->addDays(3));
+
+        $this->actingAs($admin)->put(route('admin.reservations.update', $reservation), [
+            'status' => ReservationStatus::Confirmed->value,
+            'payment_status' => PaymentStatus::Paid->value,
+            'payment_reference' => 'MANUAL-UPDATED',
+            'notes' => null,
+        ])->assertRedirect();
+
+        $this->assertTrue($payment->fresh()->paid_at->equalTo($paidAt));
+        $this->assertSame('MANUAL-UPDATED', $payment->fresh()->transaction_id);
+        $this->assertDatabaseCount('payments', 1);
     }
 
     public function test_admin_can_manage_services_and_business_settings(): void

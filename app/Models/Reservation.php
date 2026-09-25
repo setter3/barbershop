@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 #[Fillable([
@@ -72,6 +73,14 @@ class Reservation extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function firstPaidPayment(): HasOne
+    {
+        return $this->hasOne(Payment::class)
+            ->where('status', PaymentStatus::Paid->value)
+            ->whereNotNull('paid_at')
+            ->oldestOfMany('paid_at');
     }
 
     public function slotClaims(): HasMany

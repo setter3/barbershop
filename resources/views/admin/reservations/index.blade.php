@@ -14,13 +14,22 @@
         @else
             <div class="admin-table-wrap">
                 <table class="admin-table">
-                    <thead><tr><th>مشتری</th><th>آرایشگر</th><th>زمان مراجعه</th><th>مبلغ</th><th>رزرو</th><th>پرداخت</th><th></th></tr></thead>
+                    <thead><tr><th>مشتری</th><th>آرایشگر</th><th>تاریخ و ساعت نوبت</th><th>تاریخ و ساعت پرداخت</th><th>مبلغ</th><th>رزرو</th><th>پرداخت</th><th></th></tr></thead>
                     <tbody>
                     @foreach ($reservations as $reservation)
                         <tr>
                             <td><strong>{{ $reservation->customer->full_name }}</strong><small dir="ltr">{{ $reservation->customer->mobile }}</small></td>
                             <td>{{ $reservation->barber->name }}</td>
                             <td>{{ \App\Support\JalaliDate::format($reservation->starts_at) }}</td>
+                            <td>
+                                @if($reservation->firstPaidPayment?->paid_at)
+                                    {{ \App\Support\JalaliDate::format($reservation->firstPaidPayment->paid_at) }}
+                                @elseif($reservation->payment_status === \App\Enums\PaymentStatus::Paid)
+                                    <small>ثبت نشده</small>
+                                @else
+                                    <small>—</small>
+                                @endif
+                            </td>
                             <td>{{ number_format($reservation->total_amount) }} <small>ریال</small></td>
                             <td><span class="admin-status is-{{ $reservation->status->value }}">{{ $reservation->status->label() }}</span></td>
                             <td><span class="admin-status is-{{ $reservation->payment_status->value }}">{{ $reservation->payment_status->label() }}</span></td>

@@ -121,6 +121,7 @@ class ZibalPaymentTest extends TestCase
         $this->assertNull($reservation->expires_at);
         $this->assertSame(PaymentStatus::Paid, $payment->status);
         $this->assertSame('87654321', $payment->transaction_id);
+        $this->assertSame('2030-01-01 10:00:00', $payment->paid_at->setTimezone('Asia/Tehran')->format('Y-m-d H:i:s'));
         $this->assertNull($claim->fresh()->expires_at);
     }
 

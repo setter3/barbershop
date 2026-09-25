@@ -37,7 +37,7 @@ class ReservationController extends Controller
         }
 
         $reservations = Reservation::query()
-            ->with(['barber', 'customer'])
+            ->with(['barber', 'customer', 'firstPaidPayment'])
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')))
             ->when($request->filled('barber_id'), fn ($query) => $query->where('barber_id', $request->integer('barber_id')))
             ->when($filterDate, fn ($query) => $query->whereDate('starts_at', $filterDate))
@@ -61,7 +61,7 @@ class ReservationController extends Controller
 
     public function show(Reservation $reservation): View
     {
-        $reservation->load(['barber', 'customer', 'services', 'payments']);
+        $reservation->load(['barber', 'customer', 'services', 'payments', 'firstPaidPayment']);
 
         return view('admin.reservations.show', [
             'reservation' => $reservation,
@@ -92,13 +92,24 @@ class ReservationController extends Controller
             }
 
             if ($paymentStatus === PaymentStatus::Paid) {
-                $reservation->payments()->updateOrCreate(['provider' => 'manual'], [
-                    'amount' => $reservation->total_amount,
-                    'currency' => $reservation->currency,
-                    'status' => PaymentStatus::Paid,
-                    'transaction_id' => $request->validated('payment_reference'),
-                    'paid_at' => now(),
-                ]);
+                $paidPayment = $reservation->payments()
+                    ->where('status', PaymentStatus::Paid->value)
+                    ->whereNotNull('paid_at')
+                    ->oldest('paid_at')
+                    ->first();
+
+                if (! $paidPayment) {
+                    $reservation->payments()->create([
+                        'provider' => 'manual',
+                        'amount' => $reservation->total_amount,
+                        'currency' => $reservation->currency,
+                        'status' => PaymentStatus::Paid,
+                        'transaction_id' => $request->validated('payment_reference'),
+                        'paid_at' => now(),
+                    ]);
+                } elseif ($paidPayment->provider === 'manual' && $request->filled('payment_reference')) {
+                    $paidPayment->update(['transaction_id' => $request->validated('payment_reference')]);
+                }
             }
         });
 

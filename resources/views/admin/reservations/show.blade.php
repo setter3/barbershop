@@ -7,6 +7,15 @@
                 <div><dt>آرایشگر</dt><dd>{{ $reservation->barber->name }}</dd></div>
                 <div><dt>شروع</dt><dd>{{ \App\Support\JalaliDate::format($reservation->starts_at) }}</dd></div>
                 <div><dt>پایان</dt><dd>{{ \App\Support\JalaliDate::format($reservation->ends_at) }}</dd></div>
+                <div><dt>تاریخ و ساعت پرداخت</dt><dd>
+                    @if($reservation->firstPaidPayment?->paid_at)
+                        {{ \App\Support\JalaliDate::format($reservation->firstPaidPayment->paid_at) }}
+                    @elseif($reservation->payment_status === \App\Enums\PaymentStatus::Paid)
+                        ثبت نشده
+                    @else
+                        —
+                    @endif
+                </dd></div>
                 <div><dt>خدمات</dt><dd>{{ $reservation->services->pluck('pivot.name_snapshot')->join('، ') ?: 'فقط خدمت پایه' }}</dd></div>
                 <div><dt>مبلغ کل</dt><dd>{{ number_format($reservation->total_amount) }} ریال</dd></div>
                 <div><dt>مبلغ پرداخت</dt><dd>{{ number_format($reservation->total_amount) }} ریال</dd></div>

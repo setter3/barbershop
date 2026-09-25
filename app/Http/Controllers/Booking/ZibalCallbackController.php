@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Services\Payments\ZibalGateway;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -107,7 +108,7 @@ class ZibalCallbackController extends Controller
             $payment->update([
                 'status' => PaymentStatus::Paid,
                 'transaction_id' => isset($verification['refNumber']) ? (string) $verification['refNumber'] : null,
-                'paid_at' => now(),
+                'paid_at' => $this->paymentTime($verification),
                 'payload' => [
                     ...($payment->payload ?? []),
                     'callback' => $validated,
@@ -151,7 +152,7 @@ class ZibalCallbackController extends Controller
             $payment->update([
                 'status' => PaymentStatus::Paid,
                 'transaction_id' => isset($verification['refNumber']) ? (string) $verification['refNumber'] : null,
-                'paid_at' => now(),
+                'paid_at' => $this->paymentTime($verification),
                 'payload' => [
                     ...($payment->payload ?? []),
                     'callback' => $callback,
@@ -198,5 +199,25 @@ class ZibalCallbackController extends Controller
             'reservation' => $reservation,
             'payment' => $result,
         ]);
+    }
+
+    /** @param array<string, mixed> $verification */
+    private function paymentTime(array $verification): CarbonImmutable
+    {
+        $timezone = (string) config('app.timezone');
+        $paidAt = $verification['paidAt'] ?? null;
+
+        if (is_string($paidAt) && trim($paidAt) !== '') {
+            try {
+                return CarbonImmutable::parse($paidAt, $timezone)->setTimezone($timezone);
+            } catch (Throwable $exception) {
+                Log::warning('Zibal returned an invalid paidAt value.', [
+                    'paid_at' => $paidAt,
+                    'exception' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        return CarbonImmutable::now($timezone);
     }
 }
