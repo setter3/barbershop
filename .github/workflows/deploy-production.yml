@@ -58,7 +58,17 @@ jobs:
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Run application tests
-        run: php artisan test
+        shell: bash
+        run: |
+          set +e
+          php artisan test 2>&1 | tee /tmp/application-tests.log
+          test_status="${PIPESTATUS[0]}"
+          set -e
+          if [ "$test_status" -ne 0 ]; then
+            diagnostic="$(tail -n 80 /tmp/application-tests.log | sed 's/%/%25/g; s/\r/%0D/g' | awk 'BEGIN { ORS="%0A" } { print }')"
+            echo "::error title=Application tests failed::$diagnostic"
+            exit "$test_status"
+          fi
 
       - name: Restore tracked file timestamps
         shell: bash
