@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Payment;
 use App\Models\Reservation;
 use App\Services\Payments\ZibalGateway;
+use App\Services\Sms\ReservationConfirmationSms;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,11 @@ use Throwable;
 
 class ZibalCallbackController extends Controller
 {
-    public function __invoke(Request $request, ZibalGateway $gateway): RedirectResponse
+    public function __invoke(
+        Request $request,
+        ZibalGateway $gateway,
+        ReservationConfirmationSms $confirmationSms,
+    ): RedirectResponse
     {
         $validated = $request->validate([
             'trackId' => ['required', 'integer'],
@@ -38,6 +43,8 @@ class ZibalCallbackController extends Controller
         }
 
         if ($payment->status === PaymentStatus::Paid) {
+            $confirmationSms->sendFor($payment);
+
             return $this->toReservation(
                 $reservation,
                 $reservation->status === ReservationStatus::Confirmed ? 'success' : 'review',
@@ -135,6 +142,10 @@ class ZibalCallbackController extends Controller
 
             return true;
         }, 3);
+
+        if (! $needsReview) {
+            $confirmationSms->sendFor($payment);
+        }
 
         return $this->toReservation($reservation, $needsReview ? 'review' : 'success');
     }

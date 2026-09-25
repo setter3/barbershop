@@ -44,4 +44,13 @@ return [
         'payment_hold_minutes' => (int) env('ZIBAL_PAYMENT_HOLD_MINUTES', 20),
     ],
 
+    'sms' => [
+        'base_url' => env('SMS_BASE_URL', 'https://edge.ippanel.com/v1'),
+        'token' => env('SMS_API_TOKEN'),
+        'sender_number' => env('SMS_SENDER_NUMBER'),
+        'customer_pattern' => env('SMS_CUSTOMER_PATTERN'),
+        'owner_pattern' => env('SMS_OWNER_PATTERN'),
+        'owner_mobile' => env('SMS_OWNER_MOBILE'),
+    ],
+
 ];

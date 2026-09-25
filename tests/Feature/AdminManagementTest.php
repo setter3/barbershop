@@ -15,6 +15,8 @@ use App\Models\User;
 use App\Support\JalaliDate;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request as HttpRequest;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class AdminManagementTest extends TestCase
@@ -123,6 +125,43 @@ class AdminManagementTest extends TestCase
         $this->assertTrue($payment->fresh()->paid_at->equalTo($paidAt));
         $this->assertSame('MANUAL-UPDATED', $payment->fresh()->transaction_id);
         $this->assertDatabaseCount('payments', 1);
+    }
+
+    public function test_manual_payment_confirmation_sends_both_approved_sms_patterns(): void
+    {
+        config()->set('services.sms', [
+            'base_url' => 'https://edge.ippanel.test/v1',
+            'token' => 'test-api-token',
+            'sender_number' => '3000505',
+            'customer_pattern' => 'bookingcustomer',
+            'owner_pattern' => 'bookingowner',
+            'owner_mobile' => '09351234567',
+        ]);
+        Http::fake([
+            'https://edge.ippanel.test/v1/api/send' => Http::response([
+                'data' => ['message_outbox_ids' => [1123544244]],
+                'meta' => ['status' => true, 'message_code' => '200-1'],
+            ]),
+        ]);
+
+        $admin = User::factory()->admin()->create();
+        $reservation = Reservation::factory()->create([
+            'status' => ReservationStatus::PendingPayment,
+            'payment_status' => PaymentStatus::Unpaid,
+        ]);
+
+        $this->actingAs($admin)->put(route('admin.reservations.update', $reservation), [
+            'status' => ReservationStatus::Confirmed->value,
+            'payment_status' => PaymentStatus::Paid->value,
+            'payment_reference' => 'MANUAL-1001',
+            'notes' => null,
+        ])->assertRedirect();
+
+        Http::assertSentCount(2);
+        Http::assertSent(fn (HttpRequest $request): bool => $request['code'] === 'bookingcustomer'
+            && $request['from_number'] === '+983000505');
+        Http::assertSent(fn (HttpRequest $request): bool => $request['code'] === 'bookingowner'
+            && $request['recipients'] === ['+989351234567']);
     }
 
     public function test_admin_can_manage_services_and_business_settings(): void

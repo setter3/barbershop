@@ -7,7 +7,9 @@ use App\Enums\ReservationStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ReservationUpdateRequest;
 use App\Models\Barber;
+use App\Models\Payment;
 use App\Models\Reservation;
+use App\Services\Sms\ReservationConfirmationSms;
 use App\Support\JalaliDate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -70,13 +72,17 @@ class ReservationController extends Controller
         ]);
     }
 
-    public function update(ReservationUpdateRequest $request, Reservation $reservation): RedirectResponse
+    public function update(
+        ReservationUpdateRequest $request,
+        Reservation $reservation,
+        ReservationConfirmationSms $confirmationSms,
+    ): RedirectResponse
     {
         $status = ReservationStatus::from($request->validated('status'));
         $paymentStatus = PaymentStatus::from($request->validated('payment_status'));
         $this->ensureTransitionIsAllowed($reservation->status, $status);
 
-        DB::transaction(function () use ($request, $reservation, $status, $paymentStatus): void {
+        $paidPaymentId = DB::transaction(function () use ($request, $reservation, $status, $paymentStatus): ?int {
             $reservation = Reservation::query()->lockForUpdate()->findOrFail($reservation->getKey());
             $reservation->update([
                 'status' => $status,
@@ -99,7 +105,7 @@ class ReservationController extends Controller
                     ->first();
 
                 if (! $paidPayment) {
-                    $reservation->payments()->create([
+                    $paidPayment = $reservation->payments()->create([
                         'provider' => 'manual',
                         'amount' => $reservation->total_amount,
                         'currency' => $reservation->currency,
@@ -110,8 +116,16 @@ class ReservationController extends Controller
                 } elseif ($paidPayment->provider === 'manual' && $request->filled('payment_reference')) {
                     $paidPayment->update(['transaction_id' => $request->validated('payment_reference')]);
                 }
+
+                return $status === ReservationStatus::Confirmed ? $paidPayment->getKey() : null;
             }
+
+            return null;
         });
+
+        if ($paidPaymentId !== null) {
+            $confirmationSms->sendFor(Payment::query()->findOrFail($paidPaymentId));
+        }
 
         return back()->with('success', 'وضعیت رزرو به‌روزرسانی شد.');
     }

@@ -29,6 +29,14 @@ class ZibalPaymentTest extends TestCase
             'start_url' => 'https://gateway.zibal.test/start',
             'payment_hold_minutes' => 20,
         ]);
+        config()->set('services.sms', [
+            'base_url' => 'https://edge.ippanel.test/v1',
+            'token' => 'test-api-token',
+            'sender_number' => '+983000505',
+            'customer_pattern' => 'bookingcustomer',
+            'owner_pattern' => 'bookingowner',
+            'owner_mobile' => '+989351234567',
+        ]);
     }
 
     public function test_customer_is_redirected_to_zibal_for_the_full_reservation_amount(): void
@@ -102,6 +110,10 @@ class ZibalPaymentTest extends TestCase
                 'refNumber' => 87654321,
                 'paidAt' => '2030-01-01T10:00:00.000000',
             ]),
+            'https://edge.ippanel.test/v1/api/send' => Http::response([
+                'data' => ['message_outbox_ids' => [1123544244]],
+                'meta' => ['status' => true, 'message_code' => '200-1'],
+            ]),
         ]);
 
         $this->get(route('booking.payments.zibal.callback', [
@@ -123,6 +135,82 @@ class ZibalPaymentTest extends TestCase
         $this->assertSame('87654321', $payment->transaction_id);
         $this->assertSame('2030-01-01 10:00:00', $payment->paid_at->setTimezone('Asia/Tehran')->format('Y-m-d H:i:s'));
         $this->assertNull($claim->fresh()->expires_at);
+        $this->assertSame('sent', data_get($payment->payload, 'sms.targets.customer.status'));
+        $this->assertSame('sent', data_get($payment->payload, 'sms.targets.owner.status'));
+
+        Http::assertSent(function (Request $request) use ($reservation): bool {
+            return $request->url() === 'https://edge.ippanel.test/v1/api/send'
+                && $request->hasHeader('Authorization', 'test-api-token')
+                && $request['sending_type'] === 'pattern'
+                && $request['from_number'] === '+983000505'
+                && $request['code'] === 'bookingcustomer'
+                && $request['recipients'] === ['+989121234567']
+                && $request['params']['reference'] === $reservation->reference
+                && ! array_key_exists('amount', $request['params']);
+        });
+        Http::assertSent(function (Request $request) use ($reservation): bool {
+            return $request->url() === 'https://edge.ippanel.test/v1/api/send'
+                && $request['code'] === 'bookingowner'
+                && $request['recipients'] === ['+989351234567']
+                && $request['params']['mobile'] === '+989121234567'
+                && $request['params']['amount'] === '1000000'
+                && $request['params']['reference'] === $reservation->reference;
+        });
+
+        $this->get(route('booking.payments.zibal.callback', [
+            'trackId' => $payment->authority,
+            'success' => 1,
+            'status' => 2,
+            'orderId' => $reservation->reference,
+        ]))->assertRedirect(route('booking.show', [
+            'reservation' => $reservation,
+            'payment' => 'success',
+        ]));
+
+        $smsRequests = collect(Http::recorded())
+            ->filter(fn (array $record): bool => $record[0]->url() === 'https://edge.ippanel.test/v1/api/send');
+        $this->assertCount(2, $smsRequests, 'A repeated payment callback must not resend confirmation SMS messages.');
+    }
+
+    public function test_sms_failure_does_not_undo_a_successful_payment(): void
+    {
+        $reservation = $this->pendingReservation();
+        SlotClaim::factory()->for($reservation)->for($reservation->barber)->create();
+        $payment = Payment::factory()->for($reservation)->create([
+            'provider' => 'zibal',
+            'authority' => '15966442233312',
+            'amount' => $reservation->deposit_amount,
+            'currency' => 'IRR',
+            'status' => PaymentStatus::Pending,
+        ]);
+        Http::fake([
+            'https://gateway.zibal.test/v1/verify' => Http::response([
+                'result' => 100,
+                'status' => 1,
+                'amount' => 1_000_000,
+                'orderId' => $reservation->reference,
+                'refNumber' => 87654322,
+            ]),
+            'https://edge.ippanel.test/v1/api/send' => Http::response([
+                'data' => null,
+                'meta' => ['status' => false, 'message_code' => '500-1'],
+            ], 500),
+        ]);
+
+        $this->get(route('booking.payments.zibal.callback', [
+            'trackId' => $payment->authority,
+            'success' => 1,
+            'status' => 2,
+            'orderId' => $reservation->reference,
+        ]))->assertRedirect(route('booking.show', [
+            'reservation' => $reservation,
+            'payment' => 'success',
+        ]));
+
+        $this->assertSame(ReservationStatus::Confirmed, $reservation->fresh()->status);
+        $this->assertSame(PaymentStatus::Paid, $payment->fresh()->status);
+        $this->assertSame('failed', data_get($payment->payload, 'sms.targets.customer.status'));
+        $this->assertSame('failed', data_get($payment->payload, 'sms.targets.owner.status'));
     }
 
     public function test_paid_amount_mismatch_is_held_for_review_without_allowing_another_charge(): void

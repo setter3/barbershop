@@ -106,12 +106,17 @@ jobs:
           bye
           LFTP
 
-      - name: Sync the Zibal production secret
+      - name: Sync production secrets
         env:
           FTP_HOST: ${{ secrets.DEPLOY_FTP_HOST }}
           FTP_USER: ${{ secrets.DEPLOY_APP_FTP_USER }}
           FTP_PASSWORD: ${{ secrets.DEPLOY_FTP_PASSWORD }}
           ZIBAL_MERCHANT: ${{ secrets.ZIBAL_MERCHANT }}
+          SMS_API_TOKEN: ${{ secrets.SMS_API_TOKEN }}
+          SMS_SENDER_NUMBER: ${{ secrets.SMS_SENDER_NUMBER }}
+          SMS_CUSTOMER_PATTERN: ${{ secrets.SMS_CUSTOMER_PATTERN }}
+          SMS_OWNER_PATTERN: ${{ secrets.SMS_OWNER_PATTERN }}
+          SMS_OWNER_MOBILE: ${{ secrets.SMS_OWNER_MOBILE }}
         shell: bash
         run: |
           set -euo pipefail
@@ -137,6 +142,12 @@ jobs:
           values = {
               'ZIBAL_MERCHANT': os.environ['ZIBAL_MERCHANT'],
               'ZIBAL_PAYMENT_HOLD_MINUTES': '20',
+              'SMS_BASE_URL': 'https://edge.ippanel.com/v1',
+              'SMS_API_TOKEN': os.environ['SMS_API_TOKEN'],
+              'SMS_SENDER_NUMBER': os.environ['SMS_SENDER_NUMBER'],
+              'SMS_CUSTOMER_PATTERN': os.environ['SMS_CUSTOMER_PATTERN'],
+              'SMS_OWNER_PATTERN': os.environ['SMS_OWNER_PATTERN'],
+              'SMS_OWNER_MOBILE': os.environ['SMS_OWNER_MOBILE'],
           }
 
           for key, value in values.items():
@@ -160,7 +171,7 @@ jobs:
           put /tmp/arsham-production-env -o .env.deploying
           mv .env.deploying .env
           # Laravel ignores updated .env values while a cached config file exists.
-          # Remove only that generated cache so the new merchant is loaded.
+          # Remove only that generated cache so updated secrets are loaded.
           rm -f bootstrap/cache/config.php
           bye
           LFTP
