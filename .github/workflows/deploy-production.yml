@@ -61,11 +61,11 @@ jobs:
         shell: bash
         run: |
           set +e
-          php artisan test 2>&1 | tee /tmp/application-tests.log
+          NO_COLOR=1 php artisan test --no-ansi 2>&1 | tee /tmp/application-tests.log
           test_status="${PIPESTATUS[0]}"
           set -e
           if [ "$test_status" -ne 0 ]; then
-            diagnostic="$(tail -n 80 /tmp/application-tests.log | sed 's/%/%25/g; s/\r/%0D/g' | awk 'BEGIN { ORS="%0A" } { print }')"
+            diagnostic="$(tail -n 35 /tmp/application-tests.log | sed -E $'s/\\x1B\\[[0-9;]*[mK]//g' | sed 's/%/%25/g; s/\r/%0D/g' | awk 'BEGIN { ORS="%0A" } { print }')"
             echo "::error title=Application tests failed::$diagnostic"
             exit "$test_status"
           fi
